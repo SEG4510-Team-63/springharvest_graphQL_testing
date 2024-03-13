@@ -35,19 +35,14 @@ jobs:
       - name: Build
         id: build
         run: |
-          ./gradlew :examples:books-catalogue:build -x test :examples:books-catalogue-codegen:build -x test
+          ./gradlew build -x test
 
-      - name: Test
-        id: test
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # Needed to get PR information, if any
-        run: |
-          ./gradlew test
-
-      - name: Publish Test Report
+      - name: Test and Upload Coverage
         id: sonar-publish
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # Needed to get PR information, if any
+          SONAR_ORGANIZATION: ${{ vars.SONAR_ORGANIZATION }}
+          SONAR_PROJECT_KEY: ${{ secrets.SONAR_PROJECT_KEY }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: |
           ./gradlew sonar
@@ -60,7 +55,7 @@ jobs:
           report_paths: "**/build/test-results/test/TEST-*.xml"
 
   bump_version:
-    needs: [build]
+    needs: [ build ]
     runs-on: ubuntu-latest
     permissions:
       contents: write
