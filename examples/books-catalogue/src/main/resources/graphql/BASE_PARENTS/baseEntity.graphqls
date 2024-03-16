@@ -1,0 +1,20 @@
+interface BaseEntity
+{
+    id: ID!
+    traceData: TraceData
+}
+
+union  Parent = Author | Book | Publisher
+
+type Query {
+
+}
+
+type Mutation {
+
+}
+
+schema {
+    query: Query
+    mutation: Mutation
+}

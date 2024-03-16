@@ -1,15 +1,27 @@
-type Query {
-    authors: [Author]
+extend type Query {
+    authors(input: AuthorSearchInput = {name: "", page: 0, size: 20, sortOrder: "name", sortDirection: "D"}): [Author]
     authorById(id: ID!): Author
 }
 
-type Author {
-    id: ID!
-    name: String!
-    createdBy: ID
-    updatedBy: ID
+extend type Mutation {
+    authorMutation(id: ID!, input: authorMutationInput!) : Author
 }
 
-schema {
-    query: Query
+type Author implements BaseEntity{
+    id: ID!
+    name: String!
+    traceData: TraceData
+}
+
+input AuthorSearchInput{
+    name: String
+    page: Int
+    size: Int
+    sortOrder: String
+    sortDirection: String
+}
+
+input authorMutationInput {
+    name: String!
+    updatedBy: ID!
 }

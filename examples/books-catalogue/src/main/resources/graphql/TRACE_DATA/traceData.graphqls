@@ -1,0 +1,4 @@
+type TraceData{
+    traceDates: TraceDates
+    traceUsers: TraceUsers
+}
