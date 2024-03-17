@@ -11,6 +11,8 @@ import jakarta.validation.Valid;
 import java.io.Serializable;
 import java.lang.reflect.ParameterizedType;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
@@ -140,7 +142,7 @@ public abstract class AbstractCrudService<E extends BaseEntity<K>, K extends Ser
       if (traceData != null) {
         if (ObjectUtils.isNotEmpty(traceData.getTraceDates())) {
           TraceDatesEntity traceDates = traceData.getTraceDates();
-          final Date utcTimeStamp = Date.from(Instant.now());
+          final LocalDate utcTimeStamp = LocalDate.ofInstant(Instant.now(), ZoneOffset.UTC);
           traceDates.setDateUpdated(utcTimeStamp);
           traceData.setTraceDates(traceDates);
         }
@@ -168,7 +170,7 @@ public abstract class AbstractCrudService<E extends BaseEntity<K>, K extends Ser
     entity.setId(null);
 
     if (entity instanceof ITraceableEntity<?>) {
-      final Date utcTimeStamp = Date.from(Instant.now());
+      final LocalDate utcTimeStamp = LocalDate.ofInstant(Instant.now(), ZoneOffset.UTC);
       ((ITraceableEntity<Serializable>) entity).setTraceData(TraceDataEntity.builder()
                                                                  .traceDates(TraceDatesEntity.builder()
                                                                                  .dateCreated(utcTimeStamp)

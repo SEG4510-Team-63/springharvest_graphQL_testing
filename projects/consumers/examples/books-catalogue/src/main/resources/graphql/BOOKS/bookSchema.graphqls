@@ -1,0 +1,39 @@
+extend type Query
+{
+    books(input: BookSearchInput = {title: "", page: 0, size: 20, sortOrder: "title", sortDirection: "D"}): [Book]
+    searchBooks(filter : BookFilter) : [Book!]
+    bookById(id: ID!): Book
+    booksByAuthor(id: ID!): [Book]
+    booksByPublisher(id: ID!): [Book]
+    findByParameter(parameterName: String, value: String): [Book]
+}
+
+type Book implements BaseEntity
+{
+    id: ID!
+    title: String!
+    genre: String!
+    author: Author
+    publisher: Publisher
+    traceData: TraceData
+}
+
+input BookSearchInput{
+    title: String
+    page: Int
+    size: Int
+    sortOrder: String
+    sortDirection: String
+}
+
+input BookFilter{
+    title: StringExpression
+    genre: StringExpression
+    dateUpdated: DateExpression
+    authorByPetName: StringExpression
+
+    and: [BookFilter!]
+    or: [BookFilter!]
+    not: BookFilter
+}
+

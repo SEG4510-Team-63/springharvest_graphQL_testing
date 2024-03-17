@@ -1,0 +1,18 @@
+extend type Query {
+    publishers(input: PublisherSearchInput = {name: "", page: 0, size: 20, sortOrder: "name", sortDirection: "D"}): [Publisher]
+    publisherById(id: ID!): Publisher
+}
+
+type Publisher implements BaseEntity{
+    id: ID!
+    name: String!
+    traceData: TraceData
+}
+
+input PublisherSearchInput{
+    name: String
+    page: Int
+    size: Int
+    sortOrder: String
+    sortDirection: String
+}

@@ -1,4 +1,4 @@
-package dev.springharvest.crud.unit.persistence;
+package dev.springharvest.crud.unit;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
