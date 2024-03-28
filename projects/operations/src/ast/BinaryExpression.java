@@ -1,7 +1,7 @@
 package ast;
 
 /*This import isn't resolved yet. Need to find an import path to go to 'visitor' folder to import ExpressionVisitor*/
-import visitor.ExpressionVisitor;
+import visitors.ExpressionVisitor;
 
 /**
  * This class represents a BinaryExpression node
