@@ -1,7 +1,6 @@
-package ast;
+package dev.springharvest.expressions.ast;
 
-/*This import error isn't resolved yet. Need to find an import path to go to 'visitor' folder to import ExpressionVisitor*/
-import visitor.ExpressionVisitor;
+import dev.springharvest.expressions.visitors.ExpressionVisitor;
 
 public class CompoundExpression extends AbstractExpression{
     /**
@@ -10,6 +9,8 @@ public class CompoundExpression extends AbstractExpression{
      * @param leftOperand
      * @param operator
      * @param rightOperand
+     *
+     * @author sjaiswal
      */
     public CompoundExpression(Expression leftOperand, Operator operator, Expression rightOperand) {
         super(leftOperand,operator,rightOperand);

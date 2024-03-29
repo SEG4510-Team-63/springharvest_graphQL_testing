@@ -1,4 +1,5 @@
-package ast;
+package dev.springharvest.expressions.ast;
+
 /**
  * Base class for a node in the
  * expression tree. All concrete expression nodes

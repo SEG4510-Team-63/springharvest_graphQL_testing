@@ -1,13 +1,10 @@
-package ast;
+package dev.springharvest.expressions.ast;
 
-/*This import isn't resolved yet. Need to find an import path to go to 'visitor' folder to import ExpressionVisitor*/
-import visitor.ExpressionVisitor;
-
+import dev.springharvest.expressions.visitors.ExpressionVisitor;
 /**
  * Base interface for an expression node
  * in the expression tree.
  *
- * @author sjaiswal
  */
 
 public interface Expression {

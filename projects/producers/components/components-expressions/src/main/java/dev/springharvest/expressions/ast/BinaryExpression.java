@@ -1,7 +1,6 @@
-package ast;
+package dev.springharvest.expressions.ast;
 
-/*This import isn't resolved yet. Need to find an import path to go to 'visitor' folder to import ExpressionVisitor*/
-import visitors.ExpressionVisitor;
+import dev.springharvest.expressions.visitors.ExpressionVisitor;
 
 /**
  * This class represents a BinaryExpression node

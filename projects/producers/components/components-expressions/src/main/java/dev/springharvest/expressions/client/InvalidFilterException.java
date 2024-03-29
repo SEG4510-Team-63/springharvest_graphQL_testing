@@ -1,4 +1,4 @@
-package client;
+package dev.springharvest.expressions.client;
 
 /**
  * Exception for an invalid expression.

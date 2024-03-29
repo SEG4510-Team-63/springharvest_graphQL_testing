@@ -1,14 +1,17 @@
-package client;
+package dev.springharvest.expressions.client;
+import dev.springharvest.expressions.ast.*;
 
-import ast.*;
-
-import java.time.*;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import java.util.*;
 
 /**
  * GraphQL Filter Expression Parser.
  *
  * @author sjaiswal
+ * @author NeroNemesis
  */
 class FilterExpressionParser {
 

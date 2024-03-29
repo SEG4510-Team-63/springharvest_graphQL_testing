@@ -1,4 +1,4 @@
-package client;
+package dev.springharvest.expressions.client;
 
 /**
  * Field value pair for providing custom

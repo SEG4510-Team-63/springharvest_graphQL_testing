@@ -101,6 +101,7 @@ var SPRINGDOC_VERSION = "2.4.0"
 var SQUAREUP_JAVAPOET_VERSION = "1.13.0"
 var TESTCONTAINERS_VERSION = "1.19.7"
 var GRAPHQLSCALARS_VERSION = "19.1"
+var ELASTICSEARCH_VERSION = "5.2.0"
 
 dependencies {
     api(platform("org.testcontainers:testcontainers-bom:$TESTCONTAINERS_VERSION"))
@@ -323,6 +324,11 @@ dependencies {
             }
         }
 
+        api("org.springframework.data:spring-data-elasticsearch") {
+            version {
+                strictly("$ELASTICSEARCH_VERSION")
+            }
+        }
     }
 }
 

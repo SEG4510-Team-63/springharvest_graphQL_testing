@@ -172,5 +172,8 @@ subprojects {
         api "org.hibernate.orm:hibernate-jpamodelgen"
         api "org.hibernate.orm:hibernate-jpamodelgen"
         api "org.hibernate.orm:hibernate-jpamodelgen"
+
+        //EXPRESSiONS
+        api "org.springframework.data:spring-data-elasticsearch"
     }
 }

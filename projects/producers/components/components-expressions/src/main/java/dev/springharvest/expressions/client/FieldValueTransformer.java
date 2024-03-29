@@ -1,4 +1,4 @@
-package client;
+package dev.springharvest.expressions.client;
 
 /**
  * Transformer interface for customizing

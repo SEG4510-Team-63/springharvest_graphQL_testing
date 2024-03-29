@@ -1,9 +1,6 @@
-package client;
+package dev.springharvest.expressions.client;
 
-import ast.Expression;
-/*import error since the lacking of visitors package.*/
-import visitors.ExpressionVisitor;
-/*import error unknown.*/
+import dev.springharvest.expressions.ast.Expression;
 import graphql.language.Field;
 
 import java.util.HashMap;
@@ -15,6 +12,7 @@ import java.util.Map;
  * of specified format.
  *
  * @author sjaiswal
+ * @author NeroNemesis
  */
 public class FilterExpression {
 

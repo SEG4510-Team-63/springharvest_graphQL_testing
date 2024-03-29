@@ -1,4 +1,4 @@
-package ast;
+package dev.springharvest.expressions.ast;
 
 /**
  * Enum of operators for supporting relational

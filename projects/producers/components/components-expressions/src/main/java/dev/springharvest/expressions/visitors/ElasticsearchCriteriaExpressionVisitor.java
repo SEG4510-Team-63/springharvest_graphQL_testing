@@ -1,26 +1,21 @@
-package visitors;
+package dev.springharvest.expressions.visitors;
 
-import ast.BinaryExpression;
-import ast.CompoundExpression;
-import ast.Expression;
-import ast.ExpressionField;
-import ast.ExpressionValue;
-import ast.UnaryExpression;
-import client.FieldValuePair;
-import client.FieldValueTransformer;
-/*error on this import, either find a way to import locally or try to link it. Most of  the error in this file is Criteria related.*/
-import org.springframework.data.elasticsearch.core.query.Criteria;
-
+import dev.springharvest.expressions.ast.*;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.List;
 import java.util.Map;
+
+import dev.springharvest.expressions.client.FieldValuePair;
+import org.springframework.data.elasticsearch.core.query.Criteria;
+import dev.springharvest.expressions.client.FieldValueTransformer;
 
 /**
  * This class is responsible for traversing the expression tree and generating a compound elasticsearch {@link Criteria}
  * from it with correct precedence order.
  *
  * @author Sohan Lal
+ * @author NeroNemesis
  */
 public class ElasticsearchCriteriaExpressionVisitor implements ExpressionVisitor<Criteria> {
 

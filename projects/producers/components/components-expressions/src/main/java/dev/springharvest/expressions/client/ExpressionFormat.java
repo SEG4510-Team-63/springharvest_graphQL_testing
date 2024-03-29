@@ -1,16 +1,14 @@
-package client;
+package dev.springharvest.expressions.client;
 
 /**
  * Supported expression formats.
  *
  * @author sjaiswal
+ * @author NeroNemesis
  */
 public enum ExpressionFormat {
 
-    SQL("SQL"),
-    INFIX("INFIX"),
     JPA("JPA"),
-    MONGO("MONGO"),
     ELASTICSEARCH("ELASTICSEARCH");
 
     private String type;
@@ -24,6 +22,6 @@ public enum ExpressionFormat {
                 return format;
             }
         }
-        return SQL;
+        return JPA;
     }
 }
