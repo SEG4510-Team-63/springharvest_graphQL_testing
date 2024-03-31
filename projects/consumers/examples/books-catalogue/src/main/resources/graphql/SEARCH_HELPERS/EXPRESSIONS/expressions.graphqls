@@ -1,9 +1,13 @@
 input StringExpression {
     equals: String
+    equalsic: String
     contains: String
+    containsic: String
     in: [String!]
     starts: String
+    startsic: String
     ends: String
+    endsic: String
 }
 
 input IntExpression {

@@ -19,10 +19,8 @@ import java.util.Optional;
 import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
-import org.springframework.data.domain.Example;
-import org.springframework.data.domain.ExampleMatcher;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.*;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
@@ -85,6 +83,14 @@ public abstract class AbstractCrudService<E extends BaseEntity<K>, K extends Ser
   public Page<E> findAll(Pageable pageable) {
     return crudRepository.findAll(pageable);
   }
+
+  @Override
+  @Transactional(readOnly = true)
+  public List<E> findAll(Specification<E> spec){ return crudRepository.findAll(spec); }
+
+  @Override
+  @Transactional(readOnly = true)
+  public Page<E> findAll(Specification<E> spec, Pageable page) { return crudRepository.findAll(spec, page); }
 
   @Transactional
   public E create(@Valid E entity) {

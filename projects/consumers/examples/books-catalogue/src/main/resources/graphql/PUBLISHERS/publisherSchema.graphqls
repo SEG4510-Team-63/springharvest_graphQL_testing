@@ -16,3 +16,9 @@ input PublisherSearchInput{
     sortOrder: String
     sortDirection: String
 }
+
+input PublisherFilter{
+    name: StringExpression
+
+    not: PublisherFilter
+}

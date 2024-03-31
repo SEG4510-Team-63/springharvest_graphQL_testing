@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 
 import dev.springharvest.expressions.client.FieldValuePair;
+import org.hibernate.sql.ast.tree.expression.Distinct;
 import org.springframework.data.elasticsearch.core.query.Criteria;
 import dev.springharvest.expressions.client.FieldValueTransformer;
 

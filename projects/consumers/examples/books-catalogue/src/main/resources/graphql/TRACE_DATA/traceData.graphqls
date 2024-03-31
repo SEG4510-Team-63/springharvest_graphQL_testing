@@ -2,3 +2,7 @@ type TraceData{
     traceDates: TraceDates
     traceUsers: TraceUsers
 }
+
+input TraceDataFilter{
+    traceDates: TraceDatesFilter
+}

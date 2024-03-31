@@ -21,6 +21,7 @@ import jakarta.persistence.criteria.Root;
  * order.
  *
  * @author sjaiswal
+ * @author NeroNemesis
  */
 
 public class JpaSpecificationExpressionVisitor<T> implements ExpressionVisitor<Specification<T>>{
@@ -50,6 +51,14 @@ public class JpaSpecificationExpressionVisitor<T> implements ExpressionVisitor<S
         return specification;
     }
 
+    /*allows to perform distinct operations*/
+    public Specification<T> distinct() {
+        return (root, query, cb) -> {
+            query.distinct(true);
+            return null;
+        };
+    }
+
     /**
      * Handles the processing of compound
      * expression node.
@@ -76,6 +85,12 @@ public class JpaSpecificationExpressionVisitor<T> implements ExpressionVisitor<S
                 left = compoundExpression.getLeftOperand().accept(this, null);
                 right = compoundExpression.getRightOperand().accept(this, null);
                 result = Specification.where(left).or(right);
+                break;
+
+            case DISTINCT:
+                left = compoundExpression.getLeftOperand().accept(this, null);
+                right = compoundExpression.getRightOperand().accept(this, null);
+                result = Specification.where(distinct().and(Specification.where(left).and(right)));
                 break;
         }
         return result;
@@ -111,16 +126,32 @@ public class JpaSpecificationExpressionVisitor<T> implements ExpressionVisitor<S
                         predicate = criteriaBuilder.like(path, operandValue.value() + "%");
                         break;
 
+                    case STARTSIC:
+                        predicate = criteriaBuilder.like(criteriaBuilder.lower(path), operandValue.value().toString().toLowerCase() + "%");
+                        break;
+
                     case ENDS:
                         predicate = criteriaBuilder.like(path, "%" + operandValue.value());
+                        break;
+
+                    case ENDSIC:
+                        predicate = criteriaBuilder.like(criteriaBuilder.lower(path), "%" + operandValue.value().toString().toLowerCase());
                         break;
 
                     case CONTAINS:
                         predicate = criteriaBuilder.like(path, "%" + operandValue.value() + "%");
                         break;
 
+                    case CONTAINSIC:
+                        predicate = criteriaBuilder.like(criteriaBuilder.lower(path), "%" + operandValue.value().toString().toLowerCase() + "%");
+                        break;
+
                     case EQUALS:
                         predicate = criteriaBuilder.equal(path,  operandValue.value());
+                        break;
+
+                    case EQUALSIC:
+                        predicate = criteriaBuilder.equal(criteriaBuilder.lower(path), operandValue.value().toString().toLowerCase());
                         break;
 
                     /* Numeric operations.*/

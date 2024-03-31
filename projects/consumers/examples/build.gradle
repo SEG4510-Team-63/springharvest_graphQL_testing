@@ -52,6 +52,7 @@ subprojects {
 
         implementation project(':projects:producers:errors')
         implementation project(':projects:producers:components:components-shared')
+        implementation project(':projects:producers:components:components-expressions')
         implementation project(':projects:producers:components:components-crud')
         implementation project(':projects:producers:components:components-search')
         implementation project(':projects:producers:components')

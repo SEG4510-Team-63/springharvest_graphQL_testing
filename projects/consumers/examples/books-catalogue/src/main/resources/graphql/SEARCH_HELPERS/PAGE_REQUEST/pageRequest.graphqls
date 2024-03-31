@@ -1,0 +1,6 @@
+input PageRequest{
+    page: Int
+    size: Int
+    sortOrders: String
+    sortDirection: String
+}

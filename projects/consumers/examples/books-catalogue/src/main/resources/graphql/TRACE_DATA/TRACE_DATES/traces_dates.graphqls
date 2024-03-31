@@ -2,3 +2,13 @@ type TraceDates{
     dateCreated: Date
     dateUpdated: Date
 }
+
+input TraceDatesFilter{
+    dateCreated: DateExpression
+    dateUpdated: DateExpression
+
+    and: [TraceDatesFilter]
+    or: [TraceDatesFilter]
+    not: TraceDatesFilter
+    distinct: [TraceDatesFilter]
+}

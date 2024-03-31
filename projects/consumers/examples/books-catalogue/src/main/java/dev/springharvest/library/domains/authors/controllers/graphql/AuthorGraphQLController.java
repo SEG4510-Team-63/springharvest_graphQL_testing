@@ -1,5 +1,7 @@
 package dev.springharvest.library.domains.authors.controllers.graphql;
 
+import dev.springharvest.expressions.client.ExpressionFormat;
+import dev.springharvest.expressions.client.FilterExpression;
 import dev.springharvest.library.domains.authors.constants.AuthorMutationInput;
 import dev.springharvest.library.domains.authors.constants.AuthorSearchInput;
 import dev.springharvest.library.domains.authors.models.dtos.AuthorDTO;
@@ -9,10 +11,7 @@ import dev.springharvest.library.domains.authors.services.AuthorCrudService;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-import java.util.Date;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 
 import dev.springharvest.library.domains.books.models.dtos.BookDTO;
 import dev.springharvest.library.domains.books.models.entities.BookEntity;
@@ -20,6 +19,7 @@ import dev.springharvest.shared.domains.base.mappers.IBaseModelMapper;
 import dev.springharvest.shared.domains.embeddables.traces.trace.models.entities.TraceDataEntity;
 import dev.springharvest.shared.domains.embeddables.traces.users.models.entities.TraceUsersEntity;
 import jakarta.persistence.EntityNotFoundException;
+import jakarta.persistence.criteria.*;
 import org.apache.commons.lang3.StringUtils;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,6 +27,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.graphql.data.method.annotation.Argument;
 import org.springframework.graphql.data.method.annotation.MutationMapping;
 import org.springframework.graphql.data.method.annotation.QueryMapping;

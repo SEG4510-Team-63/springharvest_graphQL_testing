@@ -1,5 +1,6 @@
 extend type Query {
     authors(input: AuthorSearchInput = {name: "", page: 0, size: 20, sortOrder: "name", sortDirection: "D"}): [Author]
+    findAuthorByBookID(id: ID!, bookFilter: AuthorFilter) : Author!
     authorById(id: ID!): Author
 }
 
@@ -19,6 +20,12 @@ input AuthorSearchInput{
     size: Int
     sortOrder: String
     sortDirection: String
+}
+
+input AuthorFilter{
+    name: StringExpression
+
+    not: AuthorFilter
 }
 
 input authorMutationInput {

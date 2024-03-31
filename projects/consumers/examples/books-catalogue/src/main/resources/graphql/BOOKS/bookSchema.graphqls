@@ -1,7 +1,8 @@
 extend type Query
 {
-    books(input: BookSearchInput = {title: "", page: 0, size: 20, sortOrder: "title", sortDirection: "D"}): [Book]
-    searchBooks(filter : BookFilter) : [Book!]
+    books(input: BookSearchInput = {title: "", page: 0, size: 20, sortOrder: "title", sortDirection: "D"}): [Book!]
+    searchBooks(filter: BookFilter, paging: PageRequest = {page: 0, size: 20, sortOrders: "title", sortDirection: "D"}) : [Book!]
+    findBooksByAuthorName(name: String, bookFilter: BookFilter = null) : [Book]
     bookById(id: ID!): Book
     booksByAuthor(id: ID!): [Book]
     booksByPublisher(id: ID!): [Book]
@@ -13,9 +14,9 @@ type Book implements BaseEntity
     id: ID!
     title: String!
     genre: String!
-    author: Author
-    publisher: Publisher
-    traceData: TraceData
+    author(filter: AuthorFilter): Author!
+    publisher(filter: PublisherFilter): Publisher!
+    traceData(filter: TraceDataFilter): TraceData!
 }
 
 input BookSearchInput{
@@ -34,6 +35,7 @@ input BookFilter{
 
     and: [BookFilter!]
     or: [BookFilter!]
+    distinct: [BookFilter!]
     not: BookFilter
 }
 

@@ -1,9 +1,14 @@
 package dev.springharvest.expressions.client;
 
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import dev.springharvest.expressions.ast.Expression;
-import graphql.language.Field;
-
+import dev.springharvest.expressions.visitors.ExpressionVisitor;
+//import graphql.language.Field;
+import java.lang.reflect.Field;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -16,13 +21,13 @@ import java.util.Map;
  */
 public class FilterExpression {
 
-    private Field field;
+    //private K param;
     private Map<String,String> fieldMap;
     private Expression expressionAst;
     private FieldValueTransformer fieldValueTransformer;
 
     private FilterExpression(FilterExpressionBuilder expressionBuilder) {
-        this.field = expressionBuilder.field;
+        //this.param = expressionBuilder.param;
         this.fieldMap = expressionBuilder.fieldMap;
         this.expressionAst = expressionBuilder.expressionAst;
         this.fieldValueTransformer = expressionBuilder.fieldValueTransformer;
@@ -34,21 +39,20 @@ public class FilterExpression {
      */
     public static class FilterExpressionBuilder {
 
-        private Field field;
+        //private K param;
         private Map<String,String> fieldMap;
         private Expression expressionAst;
         private Map args;
-        private final String FILTER_ARG = "filter";
         private FieldValueTransformer fieldValueTransformer;
 
         private FilterExpressionBuilder () {
             fieldMap = new HashMap<>();
         }
 
-        public FilterExpressionBuilder field(Field field) {
-            this.field = field;
-            return this;
-        }
+        //public FilterExpressionBuilder<K> param(K params) {
+            //this.param = params;
+            //return this;
+        //}
 
         public FilterExpressionBuilder map(String source, String target) {
             fieldMap.put(source,target);
@@ -60,8 +64,8 @@ public class FilterExpression {
             return this;
         }
 
-        public FilterExpressionBuilder args(Map filterArgs) {
-            this.args = filterArgs;
+        public FilterExpressionBuilder args(Map args) {
+            this.args = args;
             return this;
         }
 
@@ -73,10 +77,7 @@ public class FilterExpression {
         public FilterExpression build() {
             FilterExpressionParser expressionParser = new FilterExpressionParser();
             if (args != null) {
-                Object filter = args.get(FILTER_ARG);
-                if (filter != null) {
-                    expressionAst = expressionParser.parseFilterExpression((Map) filter);
-                }
+                expressionAst = expressionParser.parseFilterExpression(args);
             }
             FilterExpression expression = new FilterExpression(this);
             return expression;
