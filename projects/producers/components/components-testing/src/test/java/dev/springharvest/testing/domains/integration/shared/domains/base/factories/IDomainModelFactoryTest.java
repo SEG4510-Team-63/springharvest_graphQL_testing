@@ -17,7 +17,7 @@ public class IDomainModelFactoryTest {
                     return false;
                 }
             };
-            
+
             return validModel;
         }
 
