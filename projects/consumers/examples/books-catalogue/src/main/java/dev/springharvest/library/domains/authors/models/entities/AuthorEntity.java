@@ -1,8 +1,10 @@
 package dev.springharvest.library.domains.authors.models.entities;
 
-import dev.springharvest.library.domains.pet.models.entities.PetEntity;
 import dev.springharvest.shared.domains.embeddables.traces.traceable.models.entities.AbstractTraceableEntity;
-import jakarta.persistence.*;
+import jakarta.persistence.AttributeOverride;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotBlank;
 
 import java.time.LocalDate;
@@ -30,10 +32,6 @@ public class AuthorEntity extends AbstractTraceableEntity<UUID> {
   @NotBlank
   @Column(name = "name")
   protected String name;
-
-  @JoinColumn(name = "id")
-  @OneToMany(fetch = FetchType.LAZY)
-  private PetEntity pet;
 
   @Override
   public boolean isEmpty() {
