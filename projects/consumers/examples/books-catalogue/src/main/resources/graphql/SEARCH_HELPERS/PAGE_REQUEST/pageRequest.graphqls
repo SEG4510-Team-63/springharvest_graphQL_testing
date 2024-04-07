@@ -1,6 +1,7 @@
+# The PageRequest input type is used to paginate and sort query results
 input PageRequest{
-    page: Int
-    size: Int
-    sortOrders: String
-    sortDirection: String
+    page: Int # The page number for pagination
+    size: Int # The number of items to return per page
+    sortOrders: String # The field to sort the results by
+    sortDirection: String # The direction to sort the results in
 }

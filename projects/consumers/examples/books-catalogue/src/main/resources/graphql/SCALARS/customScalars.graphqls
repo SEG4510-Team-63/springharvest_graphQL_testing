@@ -1,1 +1,3 @@
+# The Date scalar represents a date in the system
+# It is specified by the URL "https://scalars.graphql.org/andimarek/local-date"
 scalar Date @specifiedBy(url: "https://scalars.graphql.org/andimarek/local-date")
