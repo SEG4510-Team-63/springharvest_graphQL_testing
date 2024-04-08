@@ -34,11 +34,23 @@ import org.springframework.graphql.data.method.annotation.QueryMapping;
 import org.springframework.stereotype.Controller;
 import org.testcontainers.shaded.org.checkerframework.checker.units.qual.A;
 
+/**
+ * This is the GraphQL controller for the Author domain.
+ * It provides query and mutation operations for authors.
+ *
+ */
 @Controller
 public class AuthorGraphQLController {
 
   private final AuthorCrudService baseService;
   protected IBaseModelMapper<AuthorDTO, AuthorEntity, UUID> modelMapper;
+
+  /**
+   * Constructs a new AuthorGraphQLController with the given service and model mapper.
+   *
+   * @param baseService the service to use for author operations
+   * @param modelMapper the model mapper to use for converting between DTOs and entities
+   */
 
   @Autowired
   protected AuthorGraphQLController(AuthorCrudService baseService, IBaseModelMapper<AuthorDTO, AuthorEntity, UUID> modelMapper) {
@@ -46,6 +58,13 @@ public class AuthorGraphQLController {
     this.modelMapper = modelMapper;
   }
 
+
+  /**
+   * Returns a list of authors based on the given search input.
+   *
+   * @param input the search input
+   * @return a list of authors
+   */
   @QueryMapping
   List<AuthorDTO> authors(@Argument @NotNull AuthorSearchInput input) {
     //TODO: Fix
@@ -62,10 +81,17 @@ public class AuthorGraphQLController {
     return dtos.getContent();
   }
 
+  /**
+   * Returns an author by its ID.
+   *
+   * @param id the ID of the author
+   * @return the author, or an empty Optional if no author was found with the given ID
+   */
   @QueryMapping
   Optional<AuthorEntity> authorById(@Argument UUID id) {
     return baseService.findById(id);
   }
+
 
   @MutationMapping
   AuthorDTO authorMutation(@Argument @NotNull UUID id, @Argument @NotNull AuthorMutationInput input)

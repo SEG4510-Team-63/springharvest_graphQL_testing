@@ -20,18 +20,35 @@ import org.springframework.graphql.data.method.annotation.Argument;
 import org.springframework.graphql.data.method.annotation.QueryMapping;
 import org.springframework.stereotype.Controller;
 
+/**
+ * This is the GraphQL controller for the Publisher domain.
+ * It provides query operations for publishers.
+ *
+ */
 @Controller
 public class PublisherGraphQLController {
 
   private final PublisherCrudService baseService;
   protected IBaseModelMapper<PublisherDTO, PublisherEntity, UUID> modelMapper;
 
+  /**
+   * Constructs a new PublisherGraphQLController with the given service and model mapper.
+   *
+   * @param baseService the service to use for publisher operations
+   * @param modelMapper the model mapper to use for converting between DTOs and entities
+   */
   @Autowired
   protected PublisherGraphQLController(PublisherCrudService baseService, IBaseModelMapper<PublisherDTO, PublisherEntity, UUID> modelMapper) {
     this.baseService = baseService;
     this.modelMapper = modelMapper;
   }
 
+  /**
+   * Returns a list of publishers based on the given search input.
+   *
+   * @param input the search input
+   * @return a list of publishers
+   */
   @QueryMapping()
   List<PublisherDTO> publishers(@Argument @NotNull PublisherSearchInput input) {
     PageRequest publishersToFind = PageRequest.of(input.page(), input.size(), input.sortDirection() == "A" ? Sort.by(input.sortOrder()).ascending() : Sort.by(input.sortOrder()).descending());
@@ -47,6 +64,12 @@ public class PublisherGraphQLController {
     return dtos.getContent();
   }
 
+  /**
+   * Returns a publisher by its ID.
+   *
+   * @param id the ID of the publisher
+   * @return the publisher, or an empty Optional if no publisher was found with the given ID
+   */
   @QueryMapping()
   Optional<PublisherEntity> publisherById(@Argument UUID id) {
     return baseService.findById(id);
