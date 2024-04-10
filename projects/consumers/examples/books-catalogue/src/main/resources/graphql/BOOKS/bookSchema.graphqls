@@ -1,39 +1,50 @@
 extend type Query
 {
-    books(input: BookSearchInput = {title: "", page: 0, size: 20, sortOrder: "title", sortDirection: "D"}): [Book]
-    searchBooks(filter : BookFilter) : [Book!]
+    # Query to get a list of books based on the search input
+    books(input: BookSearchInput = {title: "", page: 0, size: 20, sortOrder: "title", sortDirection: "D"}): [Book!]
+    # Query to search for books based on a filter and paging information
+    searchBooks(filter: BookFilter, paging: PageRequest = {page: 0, size: 20, sortOrders: "title", sortDirection: "D"}) : [Book!]
+    # Query to find books by the author's name
+    findBooksByAuthorName(name: String, bookFilter: BookFilter = null) : [Book]
+    # Query to get a book by its ID
     bookById(id: ID!): Book
+    # Query to get books by the author's ID
     booksByAuthor(id: ID!): [Book]
+    # Query to get books by the publisher's ID
     booksByPublisher(id: ID!): [Book]
+    # Query to find books by a specific parameter and its value
     findByParameter(parameterName: String, value: String): [Book]
 }
 
+# The Book type represents a book in the system
 type Book implements BaseEntity
 {
-    id: ID!
-    title: String!
-    genre: String!
-    author: Author
-    publisher: Publisher
-    traceData: TraceData
+    id: ID! # The unique ID of the book
+    title: String! # The title of the book
+    genre: String! # The genre of the book
+    author(filter: AuthorFilter): Author! # The author of the book
+    publisher(filter: PublisherFilter): Publisher! # The publisher of the book
+    traceData(filter: TraceDataFilter): TraceData! # Trace data for the book
 }
 
+# The BookSearchInput is used to filter the books query
 input BookSearchInput{
-    title: String
-    page: Int
-    size: Int
-    sortOrder: String
-    sortDirection: String
+    title: String # The title of the book to search for
+    page: Int # The page number for pagination
+    size: Int # The number of books to return per page
+    sortOrder: String # The field to sort the books by
+    sortDirection: String # The direction to sort the books in
 }
 
+# The BookFilter is used to filter books by various conditions
 input BookFilter{
-    title: StringExpression
-    genre: StringExpression
-    dateUpdated: DateExpression
-    authorByPetName: StringExpression
+    title: StringExpression # The title condition to filter books by
+    genre: StringExpression # The genre condition to filter books by
+    dateUpdated: DateExpression # The update date condition to filter books by
+    authorByPetName: StringExpression # The author's pet name condition to filter books by
 
-    and: [BookFilter!]
-    or: [BookFilter!]
-    not: BookFilter
+    and: [BookFilter!] # The conditions to include books by
+    or: [BookFilter!] # The conditions to include books by if any of them is true
+    distinct: [BookFilter!] # The conditions to include distinct books by
+    not: BookFilter # The conditions to exclude books by
 }
-

@@ -13,4 +13,8 @@ include ':projects:producers:components:components-testing'
 include ':projects:producers:errors'
 include 'projects:producers'
 include 'projects:consumers'
+include 'projects:producers:components:components-expressions'
+findProject(':projects:producers:components:components-expressions')?.name = 'components-expressions'
+include 'projects:producers:components:components-expressions'
+findProject(':projects:producers:components:components-expressions')?.name = 'components-expressions'
 

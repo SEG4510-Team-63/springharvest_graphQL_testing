@@ -1,5 +1,7 @@
 package dev.springharvest.library.domains.authors.controllers.graphql;
 
+import dev.springharvest.expressions.client.ExpressionFormat;
+import dev.springharvest.expressions.client.FilterExpression;
 import dev.springharvest.library.domains.authors.constants.AuthorMutationInput;
 import dev.springharvest.library.domains.authors.constants.AuthorSearchInput;
 import dev.springharvest.library.domains.authors.models.dtos.AuthorDTO;
@@ -9,10 +11,7 @@ import dev.springharvest.library.domains.authors.services.AuthorCrudService;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-import java.util.Date;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 
 import dev.springharvest.library.domains.books.models.dtos.BookDTO;
 import dev.springharvest.library.domains.books.models.entities.BookEntity;
@@ -20,6 +19,7 @@ import dev.springharvest.shared.domains.base.mappers.IBaseModelMapper;
 import dev.springharvest.shared.domains.embeddables.traces.trace.models.entities.TraceDataEntity;
 import dev.springharvest.shared.domains.embeddables.traces.users.models.entities.TraceUsersEntity;
 import jakarta.persistence.EntityNotFoundException;
+import jakarta.persistence.criteria.*;
 import org.apache.commons.lang3.StringUtils;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,17 +27,30 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.graphql.data.method.annotation.Argument;
 import org.springframework.graphql.data.method.annotation.MutationMapping;
 import org.springframework.graphql.data.method.annotation.QueryMapping;
 import org.springframework.stereotype.Controller;
 import org.testcontainers.shaded.org.checkerframework.checker.units.qual.A;
 
+/**
+ * This is the GraphQL controller for the Author domain.
+ * It provides query and mutation operations for authors.
+ *
+ */
 @Controller
 public class AuthorGraphQLController {
 
   private final AuthorCrudService baseService;
   protected IBaseModelMapper<AuthorDTO, AuthorEntity, UUID> modelMapper;
+
+  /**
+   * Constructs a new AuthorGraphQLController with the given service and model mapper.
+   *
+   * @param baseService the service to use for author operations
+   * @param modelMapper the model mapper to use for converting between DTOs and entities
+   */
 
   @Autowired
   protected AuthorGraphQLController(AuthorCrudService baseService, IBaseModelMapper<AuthorDTO, AuthorEntity, UUID> modelMapper) {
@@ -45,6 +58,13 @@ public class AuthorGraphQLController {
     this.modelMapper = modelMapper;
   }
 
+
+  /**
+   * Returns a list of authors based on the given search input.
+   *
+   * @param input the search input
+   * @return a list of authors
+   */
   @QueryMapping
   List<AuthorDTO> authors(@Argument @NotNull AuthorSearchInput input) {
     //TODO: Fix
@@ -61,10 +81,17 @@ public class AuthorGraphQLController {
     return dtos.getContent();
   }
 
+  /**
+   * Returns an author by its ID.
+   *
+   * @param id the ID of the author
+   * @return the author, or an empty Optional if no author was found with the given ID
+   */
   @QueryMapping
   Optional<AuthorEntity> authorById(@Argument UUID id) {
     return baseService.findById(id);
   }
+
 
   @MutationMapping
   AuthorDTO authorMutation(@Argument @NotNull UUID id, @Argument @NotNull AuthorMutationInput input)
