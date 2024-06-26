@@ -20,8 +20,4 @@ public class PetFilterDTO extends BaseFilterDTO {
 
     @Schema(name = "name", description = "The name of the pet.")
     private FilterParameterDTO name;
-
-    @Schema(name = "owner", description = "The owner of the pet.")
-    private FilterParameterDTO owner;
-
 }

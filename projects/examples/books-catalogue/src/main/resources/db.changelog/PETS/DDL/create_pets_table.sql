@@ -6,6 +6,5 @@ CREATE TABLE pets
 (
     id           UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
     name        VARCHAR(100) NOT NULL,
-    author_id    UUID        NOT NULL,
-    UNIQUE (name, author_id)
+    UNIQUE (name)
 ) INHERITS (base_trace_parent);

@@ -22,8 +22,6 @@ public class PetDTO extends AbstractTraceableDTO<UUID> {
     @Schema(name = "name", description = "The pet's name", example = "Milo")
     private String name;
 
-    private AuthorDTO owner;
-
     @Override
     @Schema(name = "id", description = "The pet's id.", example = "00000000-0000-0000-0000-000000000001")
     public UUID getId() {
@@ -33,6 +31,6 @@ public class PetDTO extends AbstractTraceableDTO<UUID> {
     @JsonIgnore
     @Override
     public boolean isEmpty() {
-        return StringUtils.isBlank(name) && (owner == null || owner.isEmpty());
+        return StringUtils.isBlank(name);
     }
 }

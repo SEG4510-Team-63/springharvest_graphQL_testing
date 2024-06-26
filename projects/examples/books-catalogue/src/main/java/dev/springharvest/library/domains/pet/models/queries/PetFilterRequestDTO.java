@@ -17,7 +17,4 @@ import lombok.experimental.SuperBuilder;
 public class PetFilterRequestDTO extends BaseFilterRequestDTO {
 
     private PetFilterDTO pet;
-
-    private AuthorFilterDTO owner;
-
 }

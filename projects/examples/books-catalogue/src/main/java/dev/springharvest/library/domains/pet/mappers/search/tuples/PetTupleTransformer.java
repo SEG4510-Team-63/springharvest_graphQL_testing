@@ -11,25 +11,17 @@ import org.springframework.stereotype.Component;
 @Component
 public class PetTupleTransformer extends PetRootTupleTransformer{
 
-    private final AuthorRootTupleTransformer authorRootTupleTransformer;
     private final UUIDTraceDataTransformer traceDataTransformer;
 
     @Autowired
     public PetTupleTransformer(PetEntityMetadata entityMetadata,
-                                AuthorRootTupleTransformer authorTupleTransformer,
                                 UUIDTraceDataTransformer traceDataTransformer) {
         super(entityMetadata);
-        this.authorRootTupleTransformer = authorTupleTransformer;
         this.traceDataTransformer = traceDataTransformer;
     }
 
     @Override
     public void upsertAssociatedEntities(PetEntity entity, Tuple tuple) {
-        var owner = authorRootTupleTransformer.apply(tuple);
-        if (owner != null) {
-            entity.setOwner(owner.isEmpty() ? null : owner);
-        }
-
         var traceData = traceDataTransformer.apply(tuple);
         if (traceData != null) {
             entity.setTraceData(traceData.isEmpty() ? null : traceData);

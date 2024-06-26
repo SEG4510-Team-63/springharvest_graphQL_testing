@@ -42,7 +42,6 @@ public class PetEntityMetadata extends EntityMetadata<PetEntity> {
             private static final String PET_ID = DOMAIN_SINGULAR + "." + BaseEntity_.ID;
             //private static StringSharingDecompressorFactory PetEntity_;
             private static final String PET_NAME = DOMAIN_SINGULAR + "." + PetEntity_.NAME;
-            //private static final String PET_OWNER = DOMAIN_SINGULAR + "." + PetEntity_.OWNER;
 
             private Paths() {
                 throw new UnsupportedOperationException(ExceptionMessages.PRIVATE_CONSTRUCTOR_MESSAGE);

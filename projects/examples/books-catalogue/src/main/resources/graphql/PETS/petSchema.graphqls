@@ -1,0 +1,33 @@
+extend type Query
+{
+    pets(input: PetSearchInput = {name: "", page: 0, size: 20, sortOrder: "title", sortDirection: "D"}): [Pet!]
+    searchPets(filter: PetFilter = {}, paging: PageRequest = {page: 0, size: 20, sortOrders: "name", sortDirection: "D"}) : [Pet!]
+    petById(id: ID!): Pet
+    petByAuthorId(id: ID!): [Pet]
+}
+
+type Pet implements BaseEntity
+{
+    id: ID!
+    name: String!
+    traceData(filter: TraceDataFilter): TraceData!
+}
+
+input PetSearchInput{
+    name: String
+    page: Int
+    size: Int
+    sortOrder: String
+    sortDirection: String
+}
+
+input PetFilter{
+    name: StringExpression
+    dateUpdated: DateExpression
+
+    and: [PetFilter!]
+    or: [PetFilter!]
+    distinct: [PetFilter!]
+    not: PetFilter
+}
+

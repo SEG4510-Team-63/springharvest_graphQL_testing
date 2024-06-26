@@ -17,24 +17,21 @@ import org.mapstruct.MappingTarget;
 
 
 @Mapper(componentModel = "spring", builder = @Builder(disableBuilder = true),
-        uses = {IAuthorMapper.class, UUIDTraceDataMapper.class})
+        uses = {UUIDTraceDataMapper.class})
 public interface IPetMapper extends IBaseModelMapper<PetDTO, PetEntity, UUID> {
 
     @Override
     @Mapping(target = "id", nullValuePropertyMappingStrategy = org.mapstruct.NullValuePropertyMappingStrategy.IGNORE)
     @Mapping(target = "name", nullValuePropertyMappingStrategy = org.mapstruct.NullValuePropertyMappingStrategy.IGNORE)
-    @Mapping(target = "owner", nullValuePropertyMappingStrategy = org.mapstruct.NullValuePropertyMappingStrategy.IGNORE)
     @Mapping(target = "traceData", nullValuePropertyMappingStrategy = org.mapstruct.NullValuePropertyMappingStrategy.IGNORE)
     PetDTO setDirtyFields(PetDTO source, @MappingTarget PetDTO target, @Context CyclicMappingHandler context);
 
     @Override
     @Mapping(target = "traceData", source = ".")
-    @Mapping(target = "owner", source = ".")
     PetDTO toDto(Map<String, String> source, @Context CyclicMappingHandler context);
 
     @Override
     @Mapping(target = "traceData", source = ".")
-    @Mapping(target = "owner", source = ".")
     PetEntity toEntity(Map<String, String> source, @Context CyclicMappingHandler context);
 
 }

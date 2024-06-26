@@ -27,14 +27,9 @@ public class PetEntity extends AbstractTraceableEntity<UUID> {
     @Column(name = "name")
     private String name;
 
-    @NotNull
-    @JoinColumn(name = "author_id")
-    @OneToOne(fetch = FetchType.LAZY)
-    private AuthorEntity owner;
-
     @Override
     public boolean isEmpty() {
-        return super.isEmpty() && StringUtils.isBlank(name) && (owner == null || owner.isEmpty());
+        return super.isEmpty() && StringUtils.isBlank(name);
     }
 
 

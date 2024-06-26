@@ -16,7 +16,4 @@ import lombok.experimental.SuperBuilder;
 public class PetFilterRequestBO extends BaseFilterRequestBO {
 
     private PetFilterBO pet;
-
-    private AuthorFilterBO owner;
-
 }
