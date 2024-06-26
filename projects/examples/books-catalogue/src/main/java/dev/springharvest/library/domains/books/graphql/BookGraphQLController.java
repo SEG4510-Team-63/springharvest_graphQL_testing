@@ -1,4 +1,4 @@
-package dev.springharvest.library.domains.books.controllers.graphql;
+package dev.springharvest.library.domains.books.graphql;
 
 import dev.springharvest.expressions.client.ExpressionFormat;
 import dev.springharvest.expressions.client.FilterExpression;

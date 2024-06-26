@@ -31,8 +31,8 @@ public class AuthorEntity extends AbstractTraceableEntity<UUID> {
   @Column(name = "name")
   protected String name;
 
-  @JoinColumn(name = "id")
-  @OneToMany(fetch = FetchType.LAZY)
+  @JoinColumn(name = "pet_id")
+  @OneToOne(fetch = FetchType.LAZY)
   private PetEntity pet;
 
   @Override

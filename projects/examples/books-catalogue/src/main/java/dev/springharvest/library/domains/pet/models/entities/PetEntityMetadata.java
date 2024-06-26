@@ -41,7 +41,7 @@ public class PetEntityMetadata extends EntityMetadata<PetEntity> {
             private static final String DOMAIN_PLURAL = "pets";
             private static final String PET_ID = DOMAIN_SINGULAR + "." + BaseEntity_.ID;
             //private static StringSharingDecompressorFactory PetEntity_;
-            //private static final String PET_NAME = DOMAIN_SINGULAR + "." + PetEntity_.NAME;
+            private static final String PET_NAME = DOMAIN_SINGULAR + "." + PetEntity_.NAME;
             //private static final String PET_OWNER = DOMAIN_SINGULAR + "." + PetEntity_.OWNER;
 
             private Paths() {
@@ -53,13 +53,11 @@ public class PetEntityMetadata extends EntityMetadata<PetEntity> {
                 private static final Map<String, Class<?>> ROOTS = Map.of(DOMAIN_SINGULAR, PetEntity.class);
                 private static final Map<String, Class<?>> ROOT_PATH_CLAZZ_MAP = Map.of(
                         PET_ID, UUID.class,
-                        PET_NAME, String.class,
-                        PET_OWNER, AuthorEntity.class);
+                        PET_NAME, String.class);
 
                 private static final Map<String, BiConsumer<PetEntity, Object>> ROOT_MAPPING_FUNCTIONS = Map.of(
                         PET_ID, (entity, value) -> entity.setId((UUID) value),
-                        PET_NAME, (entity, value) -> entity.setName((String) value),
-                        PET_OWNER, (entity, value) -> entity.setOwner((AuthorEntity) value)
+                        PET_NAME, (entity, value) -> entity.setName((String) value)
                 );
 
                 private Maps() {

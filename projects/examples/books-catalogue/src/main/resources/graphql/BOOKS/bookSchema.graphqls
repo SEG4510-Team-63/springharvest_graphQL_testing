@@ -2,7 +2,7 @@ extend type Query
 {
     books(input: BookSearchInput = {title: "", page: 0, size: 20, sortOrder: "title", sortDirection: "D"}): [Book!]
     searchBooks(filter: BookFilter, paging: PageRequest = {page: 0, size: 20, sortOrders: "title", sortDirection: "D"}) : [Book!]
-    findBooksByAuthorName(name: String, bookFilter: BookFilter = null) : [Book]
+    findBooksByAuthorName(name: String, bookFilter: BookFilter = null) : [[Book]]
     bookById(id: ID!): Book
     booksByAuthor(id: ID!): [Book]
     booksByPublisher(id: ID!): [Book]

@@ -1,4 +1,4 @@
-package dev.springharvest.library.domains.authors.controllers.graphql;
+package dev.springharvest.library.domains.authors.graphql;
 
 import dev.springharvest.expressions.client.ExpressionFormat;
 import dev.springharvest.expressions.client.FilterExpression;
@@ -15,6 +15,7 @@ import java.util.*;
 
 import dev.springharvest.library.domains.books.models.dtos.BookDTO;
 import dev.springharvest.library.domains.books.models.entities.BookEntity;
+import dev.springharvest.shared.domains.base.mappers.IBaseModelMapper;
 import dev.springharvest.shared.domains.base.mappers.IBaseModelMapper;
 import dev.springharvest.shared.domains.embeddables.traces.trace.models.entities.TraceDataEntity;
 import dev.springharvest.shared.domains.embeddables.traces.users.models.entities.TraceUsersEntity;

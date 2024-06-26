@@ -6,6 +6,8 @@ import dev.springharvest.expressions.visitors.ExpressionVisitor;
 //import graphql.language.Field;
 import java.lang.reflect.Field;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.data.jpa.domain.Specification;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;

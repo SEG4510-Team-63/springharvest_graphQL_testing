@@ -14,3 +14,9 @@ databaseChangeLog:
   - include:
       file: BOOKS/master.yaml
       relativeToChangelogFile: true
+  - include:
+      file: PETS/master.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: HELPER/add_foreign_keys.yaml
+      relativeToChangelogFile: true

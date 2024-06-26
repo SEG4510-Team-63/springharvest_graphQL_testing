@@ -1,6 +1,7 @@
 package dev.springharvest.library.domains.pet.mappers;
 
 
+import dev.springharvest.library.domains.authors.mappers.IAuthorMapper;
 import dev.springharvest.library.domains.pet.models.dtos.PetDTO;
 import dev.springharvest.library.domains.pet.models.entities.PetEntity;
 import dev.springharvest.shared.domains.base.mappers.CyclicMappingHandler;
@@ -16,7 +17,7 @@ import org.mapstruct.MappingTarget;
 
 
 @Mapper(componentModel = "spring", builder = @Builder(disableBuilder = true),
-        uses = {UUIDTraceDataMapper.class})
+        uses = {IAuthorMapper.class, UUIDTraceDataMapper.class})
 public interface IPetMapper extends IBaseModelMapper<PetDTO, PetEntity, UUID> {
 
     @Override

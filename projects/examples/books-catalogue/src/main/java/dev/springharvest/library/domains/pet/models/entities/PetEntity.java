@@ -29,7 +29,7 @@ public class PetEntity extends AbstractTraceableEntity<UUID> {
 
     @NotNull
     @JoinColumn(name = "author_id")
-    @ManyToOne(fetch = FetchType.LAZY)
+    @OneToOne(fetch = FetchType.LAZY)
     private AuthorEntity owner;
 
     @Override

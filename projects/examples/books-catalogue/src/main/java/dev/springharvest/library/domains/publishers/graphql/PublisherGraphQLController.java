@@ -1,4 +1,4 @@
-package dev.springharvest.library.domains.publishers.controllers.graphql;
+package dev.springharvest.library.domains.publishers.graphql;
 
 import dev.springharvest.library.domains.publishers.constants.PublisherSearchInput;
 import dev.springharvest.library.domains.publishers.models.dtos.PublisherDTO;
