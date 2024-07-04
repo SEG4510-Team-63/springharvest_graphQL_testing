@@ -25,13 +25,8 @@ public class AuthorGraphQLController extends AbstractGraphQLCrudController<Autho
   }
 
   @QueryMapping
-  public List<AuthorDTO> searchAuthors(@Argument @NotNull Map<String, Object> filter, @Argument @NotNull DataPaging paging) {
-    return search(filter, paging);
-  }
-
-  @QueryMapping
-  public List<AuthorDTO> searchAuthorsSimple(@Argument @NotNull Map<String, Object> filter) {
-    return search(filter);
+  public List<AuthorDTO> searchAuthors(@Argument @NotNull Map<String, Object> filter, @Argument DataPaging paging) {
+    return paging != null ? search(filter, paging) : search(filter);
   }
 
 

@@ -1,6 +1,5 @@
 extend type Query {
     searchAuthors(filter: AuthorFilter = {}, paging: PageRequest = { page: 0, size: 20, sortOrders: "name", sortDirection: "D" }) : [Author!]
-    searchAuthorsSimple(filter: AuthorFilter = {}) : [Author!]
 }
 
 extend type Mutation {

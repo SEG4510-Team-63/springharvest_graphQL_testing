@@ -1,7 +1,6 @@
 extend type Query
 {
     searchPets(filter: PetFilter = {}, paging: PageRequest = {page: 0, size: 20, sortOrders: "name", sortDirection: "D"}) : [Pet!]
-    searchPetsSimple(filter: PetFilter = {}) : [Pet!]
 }
 
 type Pet implements BaseEntity

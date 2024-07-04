@@ -27,12 +27,7 @@ public class PetGraphQLController extends AbstractGraphQLCrudController<PetDTO, 
     }
 
     @QueryMapping
-    public List<PetDTO> searchPets(@Argument @NotNull Map<String, Object> filter, @Argument @NotNull DataPaging paging) {
-        return search(filter, paging);
-    }
-
-    @QueryMapping
-    public List<PetDTO> searchPetsSimple(@Argument @NotNull Map<String, Object> filter) {
-        return search(filter);
+    public List<PetDTO> searchPets(@Argument @NotNull Map<String, Object> filter, @Argument DataPaging paging) {
+        return paging != null ? search(filter, paging) : search(filter);
     }
 }

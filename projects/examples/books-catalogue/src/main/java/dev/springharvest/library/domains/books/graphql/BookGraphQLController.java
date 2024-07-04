@@ -24,12 +24,7 @@ public class BookGraphQLController extends AbstractGraphQLCrudController<BookDTO
   }
 
     @QueryMapping
-    public List<BookDTO> searchBooks(@Argument @NotNull Map<String, Object> filter, @Argument @NotNull DataPaging paging) {
-        return search(filter, paging);
-    }
-
-    @QueryMapping
-    public List<BookDTO> searchBooksSimple(@Argument @NotNull Map<String, Object> filter) {
-        return search(filter);
+    public List<BookDTO> searchBooks(@Argument @NotNull Map<String, Object> filter, @Argument DataPaging paging) {
+        return paging != null ? search(filter, paging) : search(filter);
     }
 }

@@ -1,7 +1,6 @@
 extend type Query
 {
     searchBooks(filter: BookFilter = {}, paging: PageRequest = {page: 0, size: 20, sortOrders: "title", sortDirection: "D"}) : [Book!]
-    searchBooksSimple(filter: BookFilter = {}) : [Book!]
 }
 
 type Book implements BaseEntity

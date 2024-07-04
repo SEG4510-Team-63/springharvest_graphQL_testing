@@ -25,9 +25,6 @@ public class PublisherGraphQLController extends AbstractGraphQLCrudController<Pu
 
     @QueryMapping
     public List<PublisherDTO> searchPublishers(@Argument @NotNull Map<String, Object> filter, @Argument DataPaging paging) {
-      if (paging == null)
-        return search(filter);
-      else
-          return search(filter, paging);
+      return paging != null ? search(filter, paging) : search(filter);
     }
 }
