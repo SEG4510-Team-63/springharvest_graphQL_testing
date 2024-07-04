@@ -9,6 +9,4 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
 
 @Repository
-public interface IPublisherCrudRepository extends ICrudRepository<PublisherEntity, UUID> {
-    public Page<PublisherEntity> findByNameContainingIgnoreCase(String name, Pageable pageable);
-}
+public interface IPublisherCrudRepository extends ICrudRepository<PublisherEntity, UUID> {}

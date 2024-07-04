@@ -16,8 +16,4 @@ public class PublisherCrudService extends AbstractCrudService<PublisherEntity, U
   protected PublisherCrudService(IPublisherCrudRepository baseRepository) {
     super(baseRepository);
   }
-    public Page<PublisherEntity> findByNameContaining(String name, Pageable pageable)
-    {
-      return ((IPublisherCrudRepository) crudRepository).findByNameContainingIgnoreCase(name, pageable);
-    }
 }

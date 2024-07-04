@@ -7,8 +7,8 @@ input TraceDatesFilter{
     dateCreated: DateExpression
     dateUpdated: DateExpression
 
-    and: [TraceDatesFilter]
-    or: [TraceDatesFilter]
+    and: [TraceDatesFilter!]
+    or: [TraceDatesFilter!]
     not: TraceDatesFilter
-    distinct: [TraceDatesFilter]
+    distinct: [TraceDatesFilter!]
 }

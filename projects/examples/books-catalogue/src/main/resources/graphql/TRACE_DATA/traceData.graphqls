@@ -5,4 +5,5 @@ type TraceData{
 
 input TraceDataFilter{
     traceDates: TraceDatesFilter
+    traceUsers: TraceUsersFilter
 }

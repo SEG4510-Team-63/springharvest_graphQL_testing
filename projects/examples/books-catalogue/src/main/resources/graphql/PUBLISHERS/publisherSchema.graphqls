@@ -1,6 +1,5 @@
 extend type Query {
-    publishers(input: PublisherSearchInput = {name: "", page: 0, size: 20, sortOrder: "name", sortDirection: "D"}): [Publisher]
-    publisherById(id: ID!): Publisher
+    searchPublishers(filter: PublisherFilter = {}, paging: PageRequest = {page: 0, size: 20, sortOrders: "name", sortDirection: "D"}): [Publisher!]
 }
 
 type Publisher implements BaseEntity{
@@ -9,16 +8,13 @@ type Publisher implements BaseEntity{
     traceData: TraceData
 }
 
-input PublisherSearchInput{
-    name: String
-    page: Int
-    size: Int
-    sortOrder: String
-    sortDirection: String
-}
-
 input PublisherFilter{
+    id: IdExpression
     name: StringExpression
+    traceData: TraceDataFilter
 
+    and: [PublisherFilter!]
+    or: [PublisherFilter!]
+    distinct: [PublisherFilter!]
     not: PublisherFilter
 }

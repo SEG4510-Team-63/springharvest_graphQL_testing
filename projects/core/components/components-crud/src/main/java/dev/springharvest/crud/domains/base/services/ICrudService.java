@@ -6,7 +6,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 
@@ -53,20 +52,6 @@ public interface ICrudService<E extends BaseEntity<K>, K extends Serializable> {
    * @return All entities of the entity domain.
    */
   Page<E> findAll(Pageable pageable);
-
-  /**
-   * Returns all entities of the entity domain.
-   *
-   * @return All entities of the entity domain.
-   */
-  List<E> findAll(Specification<E> spec);
-
-  /**
-   * Returns all entities of the entity domain.
-   *
-   * @return All entities of the entity domain.
-   */
-  Page<E> findAll(Specification<E> spec, Pageable page);
 
   /**
    * Saves a new entity to the database if it does not already exist.

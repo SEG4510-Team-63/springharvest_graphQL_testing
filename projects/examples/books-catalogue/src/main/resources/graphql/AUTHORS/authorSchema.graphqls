@@ -1,7 +1,6 @@
 extend type Query {
-    authors(input: AuthorSearchInput = {name: "", page: 0, size: 20, sortOrder: "name", sortDirection: "D"}): [Author]
-    findAuthorByBookID(id: ID!, bookFilter: AuthorFilter) : Author!
-    authorById(id: ID!): Author
+    searchAuthors(filter: AuthorFilter = {}, paging: PageRequest = { page: 0, size: 20, sortOrders: "name", sortDirection: "D" }) : [Author!]
+    searchAuthorsSimple(filter: AuthorFilter = {}) : [Author!]
 }
 
 extend type Mutation {
@@ -11,20 +10,19 @@ extend type Mutation {
 type Author implements BaseEntity{
     id: ID!
     name: String!
+    pet: Pet
     traceData: TraceData
 }
 
-input AuthorSearchInput{
-    name: String
-    page: Int
-    size: Int
-    sortOrder: String
-    sortDirection: String
-}
-
 input AuthorFilter{
+    id: IdExpression
     name: StringExpression
+    pet: PetFilter
+    traceData: TraceDataFilter
 
+    and: [AuthorFilter!]
+    or: [AuthorFilter!]
+    distinct: [AuthorFilter!]
     not: AuthorFilter
 }
 

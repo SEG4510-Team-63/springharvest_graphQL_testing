@@ -11,5 +11,4 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface IAuthorCrudRepository extends ICrudRepository<AuthorEntity, UUID> {
 
-    public Page<AuthorEntity> findByNameContainingIgnoreCase(String name, Pageable pageable);
 }

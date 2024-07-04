@@ -10,6 +10,12 @@ input StringExpression {
     endsic: String
 }
 
+input IdExpression {
+    equals: String
+    in: [String!]
+    between: [String!]
+}
+
 input IntExpression {
     eq: Int
     gt: Int
@@ -17,6 +23,7 @@ input IntExpression {
     lt: Int
     lte: Int
     in: [Int!]
+    between: [Int!]
 }
 
 input DateExpression {

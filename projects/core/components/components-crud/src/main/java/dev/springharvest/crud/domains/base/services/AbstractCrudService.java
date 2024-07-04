@@ -84,14 +84,6 @@ public abstract class AbstractCrudService<E extends BaseEntity<K>, K extends Ser
     return crudRepository.findAll(pageable);
   }
 
-  @Override
-  @Transactional(readOnly = true)
-  public List<E> findAll(Specification<E> spec){ return crudRepository.findAll(spec); }
-
-  @Override
-  @Transactional(readOnly = true)
-  public Page<E> findAll(Specification<E> spec, Pageable page) { return crudRepository.findAll(spec, page); }
-
   @Transactional
   public E create(@Valid E entity) {
     entity = beforeCreation(entity);

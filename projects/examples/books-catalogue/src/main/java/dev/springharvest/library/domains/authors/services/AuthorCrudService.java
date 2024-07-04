@@ -19,8 +19,4 @@ public class AuthorCrudService extends AbstractCrudService<AuthorEntity, UUID> {
   protected AuthorCrudService(IAuthorCrudRepository baseRepository) {
     super(baseRepository);
   }
-
-  public Page<AuthorEntity> findByNameContaining(String name, Pageable pageable){
-    return ((IAuthorCrudRepository) crudRepository).findByNameContainingIgnoreCase(name, pageable);
-  }
 }

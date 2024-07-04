@@ -1,11 +1,13 @@
 package dev.springharvest.expressions.ast;
 
+import lombok.Getter;
+
 /**
  * Enum of operators for supporting relational
  * and logical expressions.
  *
  * @author sjaiswal
- * @author NeroNemesis
+ * @author Gilles Djawa (NeroNemesis)
  */
 public enum Operator {
 
@@ -45,14 +47,23 @@ public enum Operator {
     /**
      * Enum of operator kind.
      */
-    enum Kind {
+    public enum Kind {
         COMPOUND,
         BINARY,
         UNARY;
     }
 
+    /**
+     * -- GETTER --
+     *  Returns operator name.
+     *
+     * @return
+     */
+    @Getter
     private String name;
+    @Getter
     private String type;
+    @Getter
     private Kind kind;
 
     Operator(String name, String type, Kind kind) {
@@ -84,21 +95,5 @@ public enum Operator {
      */
     public static String getOperatorKind(String name) {
         return getOperator(name).getKind().name();
-    }
-
-    /**
-     * Returns operator name.
-     * @return
-     */
-    public String getName() {
-        return name;
-    }
-
-    /**
-     * Returns operator kind.
-     * @return
-     */
-    public Kind getKind() {
-        return kind;
     }
 }

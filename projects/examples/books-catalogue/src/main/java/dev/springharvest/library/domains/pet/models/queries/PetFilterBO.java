@@ -16,5 +16,4 @@ import lombok.experimental.SuperBuilder;
 public class PetFilterBO extends BaseFilterBO {
     private FilterParameterBO id;
     private FilterParameterBO name;
-    private FilterParameterBO owner;
 }

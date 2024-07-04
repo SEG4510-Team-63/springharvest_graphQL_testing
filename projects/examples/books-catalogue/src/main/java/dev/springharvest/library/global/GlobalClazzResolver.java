@@ -2,6 +2,7 @@ package dev.springharvest.library.global;
 
 import dev.springharvest.library.domains.authors.models.entities.AuthorEntity;
 import dev.springharvest.library.domains.books.models.entities.BookEntity;
+import dev.springharvest.library.domains.pet.models.entities.PetEntity;
 import dev.springharvest.library.domains.publishers.models.entities.PublisherEntity;
 import dev.springharvest.search.domains.base.models.entities.EntityMetadata;
 import dev.springharvest.search.domains.base.models.entities.IEntityMetadata;
@@ -21,11 +22,13 @@ public class GlobalClazzResolver implements IGlobalClazzResolver {
   @Autowired
   public GlobalClazzResolver(EntityMetadata<AuthorEntity> authorMetadata,
                              EntityMetadata<PublisherEntity> publisherMetadata,
+                             EntityMetadata<PetEntity> petEntityEntityMetadata,
                              EntityMetadata<BookEntity> bookMetadata) {
 
     this.entityMetadataMap = new HashMap<>();
     entityMetadataMap.put(authorMetadata.getDomainName(), authorMetadata);
     entityMetadataMap.put(publisherMetadata.getDomainName(), publisherMetadata);
+    entityMetadataMap.put(petEntityEntityMetadata.getDomainName(), petEntityEntityMetadata);
     entityMetadataMap.put(bookMetadata.getDomainName(), bookMetadata);
   }
 

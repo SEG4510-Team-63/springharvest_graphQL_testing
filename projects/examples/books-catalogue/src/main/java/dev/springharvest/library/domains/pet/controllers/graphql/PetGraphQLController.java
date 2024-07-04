@@ -1,17 +1,14 @@
 package dev.springharvest.library.domains.pet.controllers.graphql;
 
-import dev.springharvest.expressions.helpers.JpaSpecificationHelper;
+import dev.springharvest.crud.domains.base.graphql.AbstractGraphQLCrudController;
 import dev.springharvest.library.domains.pet.models.dtos.PetDTO;
 import dev.springharvest.library.domains.pet.models.entities.PetEntity;
-import dev.springharvest.library.domains.pet.service.PetCrudService;
-import dev.springharvest.library.global.DataPaging;
+import dev.springharvest.library.domains.pet.service.PetSpecificationCrudService;
+import dev.springharvest.shared.constants.DataPaging;
 import dev.springharvest.shared.domains.base.mappers.IBaseModelMapper;
-import org.jetbrains.annotations.NotNull;
+import jakarta.validation.constraints.NotNull;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Sort;
-import org.springframework.data.jpa.domain.Specification;
 import org.springframework.graphql.data.method.annotation.Argument;
 import org.springframework.graphql.data.method.annotation.QueryMapping;
 import org.springframework.stereotype.Controller;
@@ -20,36 +17,22 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+@Slf4j
 @Controller
-public class PetGraphQLController {
-
-    private final PetCrudService baseService;
-    protected IBaseModelMapper<PetDTO, PetEntity, UUID> modelMapper;
-    private Specification<PetEntity> specification;
+public class PetGraphQLController extends AbstractGraphQLCrudController<PetDTO, PetEntity, UUID> {
 
     @Autowired
-    public  PetGraphQLController(IBaseModelMapper<PetDTO, PetEntity, UUID> modelMapper, PetCrudService baseService){
-        this.baseService = baseService;
-        this.modelMapper = modelMapper;
+    public  PetGraphQLController(IBaseModelMapper<PetDTO, PetEntity, UUID> modelMapper, PetSpecificationCrudService baseService){
+        super(modelMapper, baseService, PetEntity.class);
     }
 
     @QueryMapping
-    List<PetDTO> searchPets(@Argument @NotNull Map filter, @Argument DataPaging paging) {
-        var pageRequest = PageRequest.of(paging.page(), paging.size(), paging.sortDirection() == "A" ? Sort.by(paging.sortOrders()).ascending() : Sort.by(paging.sortOrders()).descending());
+    public List<PetDTO> searchPets(@Argument @NotNull Map<String, Object> filter, @Argument @NotNull DataPaging paging) {
+        return search(filter, paging);
+    }
 
-        if (filter.isEmpty())
-        {
-            Page<PetEntity> petsPage  = baseService.findAll(pageRequest);
-
-            Page<PetDTO> dtos = petsPage.hasContent() ? modelMapper.pagedEntityToPagedDto(petsPage) : Page.empty(pageRequest);
-            return dtos.getContent();
-        }
-
-        specification = JpaSpecificationHelper.parseFilterExpression(filter);
-
-        Page<PetEntity> petsPage  = baseService.findAll(specification, pageRequest);
-
-        Page<PetDTO> dtos = petsPage.hasContent() ? modelMapper.pagedEntityToPagedDto(petsPage) : Page.empty(pageRequest);
-        return dtos.getContent();
+    @QueryMapping
+    public List<PetDTO> searchPetsSimple(@Argument @NotNull Map<String, Object> filter) {
+        return search(filter);
     }
 }
