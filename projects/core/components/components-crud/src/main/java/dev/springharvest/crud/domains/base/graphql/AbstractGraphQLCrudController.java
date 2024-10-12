@@ -28,6 +28,7 @@ import java.util.Map;
  * @see AbstractCrudService
  * @see BaseDTO
  * @see BaseEntity
+ * @author Gilles Djawa (NeroNemesis)
  * @since 1.0
  */
 public class AbstractGraphQLCrudController<D extends BaseDTO<K>, E extends BaseEntity<K>, K extends Serializable>
