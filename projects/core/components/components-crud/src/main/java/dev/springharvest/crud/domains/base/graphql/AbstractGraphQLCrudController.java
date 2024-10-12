@@ -18,11 +18,12 @@ import java.util.Map;
 
 /**
  * A generic implementation of the IGraphQLCrudController interface.
+ * This class provides CRUD operations for GraphQL endpoints using generics to handle different types of DTOs, entities, and primary key fields.
  *
- * @param <D> The DTO type
- * @param <E> The entity type
- * @param <K> The type of the id (primary key) field
- * @author Gilles Djawa (NeroNemesis)
+ * @param <D> The DTO type, which extends BaseDTO<K>
+ * @param <E> The entity type, which extends BaseEntity<K>
+ * @param <K> The type of the primary key field, which extends Serializable
+ *
  * @see IGraphQLCrudController
  * @see AbstractCrudService
  * @see BaseDTO
@@ -32,10 +33,28 @@ import java.util.Map;
 public class AbstractGraphQLCrudController<D extends BaseDTO<K>, E extends BaseEntity<K>, K extends Serializable>
         implements IGraphQLCrudController<D, K> {
 
+    /**
+     * Mapper to convert between entities and DTOs.
+     */
     protected IBaseModelMapper<D, E, K> modelMapper;
+
+    /**
+     * Service to handle CRUD operations with specifications.
+     */
     protected AbstractSpecificationCrudService<E, K> crudService;
+
+    /**
+     * The class type of the entity.
+     */
     protected Class<E> entityClass;
 
+    /**
+     * Constructs an AbstractGraphQLCrudController with the specified mapper, service, and entity class.
+     *
+     * @param modelMapper the mapper to convert between entities and DTOs
+     * @param crudService the service to handle CRUD operations
+     * @param entityClass the class type of the entity
+     */
     protected AbstractGraphQLCrudController(IBaseModelMapper<D, E, K> modelMapper,
                                             AbstractSpecificationCrudService<E, K> crudService,
                                             Class<E> entityClass) {
@@ -44,6 +63,13 @@ public class AbstractGraphQLCrudController<D extends BaseDTO<K>, E extends BaseE
         this.entityClass = entityClass;
     }
 
+    /**
+     * Searches for entities based on a filter and paging information, then converts the results to DTOs.
+     *
+     * @param filter the filter criteria as a map of field names to values
+     * @param paging the paging information
+     * @return a list of DTOs matching the filter criteria
+     */
     @Override
     public List<D> search(Map<String, Object> filter, DataPaging paging) {
         var pageRequest = PageRequest.of(paging.page(), paging.size(), paging.sortDirection().name().equals("A") ? Sort.by(paging.sortOrders()).ascending() : Sort.by(paging.sortOrders()).descending());
@@ -60,6 +86,12 @@ public class AbstractGraphQLCrudController<D extends BaseDTO<K>, E extends BaseE
         return dtos.getContent();
     }
 
+    /**
+     * Searches for entities based on a filter without paging, then converts the results to DTOs.
+     *
+     * @param filter the filter criteria as a map of field names to values
+     * @return a list of DTOs matching the filter criteria
+     */
     @Override
     public List<D> search(Map<String, Object> filter) {
         if (filter.isEmpty()) {
