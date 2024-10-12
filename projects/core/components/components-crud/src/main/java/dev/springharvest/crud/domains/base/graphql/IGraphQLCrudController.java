@@ -12,13 +12,26 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * This interface is used to define the contract for a base GraphQL controller. The @Operation annotation is used to define the OpenAPI specification for the
- * controller.
+ * This interface defines the contract for a base GraphQL controller.
+ * It provides methods for performing search queries on entities.
+ * The @Operation annotation is used to define the OpenAPI specification for the controller.
  *
  * @param <D> The DTO object for a domain
  * @param <K> The type of the id (primary key) field pertaining to the entity relating to the DTO
+ *
+ * @see BaseDTO
+ * @see DataPaging
+ * @since 1.0
  */
 public interface IGraphQLCrudController<D extends BaseDTO<K>, K extends Serializable> {
+
+    /**
+     * Performs a search query on the entity based on the provided filter and paging information.
+     *
+     * @param filter the filter criteria as a map of field names to values
+     * @param paging the paging information
+     * @return a list of DTOs matching the filter criteria
+     */
     @Operation(operationId = "search", summary = "Performs any search query on the entity.",
             description = "Use this API to retrieve entities corresponding to the passed query inside the filter and ordered according to the requested paging.",
             parameters = {
@@ -32,6 +45,12 @@ public interface IGraphQLCrudController<D extends BaseDTO<K>, K extends Serializ
             responses = {@ApiResponse(responseCode = "200", description = "The queried entities ordered according to the paging.")})
     List<D> search(@RequestParam(name = "filter", required = true) Map<String, Object> filter, @RequestParam(name = "paging", required = true) DataPaging paging);
 
+    /**
+     * Performs a search query on the entity based on the provided filter without paging information.
+     *
+     * @param filter the filter criteria as a map of field names to values
+     * @return a list of DTOs matching the filter criteria
+     */
     @Operation(operationId = "search", summary = "Performs any search query on the entity.",
             description = "Use this API to retrieve entities corresponding to the passed query inside the filter.",
             parameters = {
