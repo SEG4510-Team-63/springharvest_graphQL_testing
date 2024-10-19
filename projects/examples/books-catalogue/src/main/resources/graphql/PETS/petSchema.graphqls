@@ -1,6 +1,7 @@
 extend type Query
 {
-    searchPets(filter: PetFilter = {}, paging: PageRequest = {page: 0, size: 20, sortOrders: "name", sortDirection: "D"}) : [Pet!]
+    searchPets(filter: PetFilter = {}, operation: OperationFilter = {}, paging: PageRequest = {page: 0, size: 20, sortOrders: "name", sortDirection: "D"}) : [Pet!]
+    countPets(filter : PetFilter = {}, operation: OperationFilter = {}) : String
 }
 
 type Pet implements BaseEntity
@@ -17,7 +18,5 @@ input PetFilter{
 
     and: [PetFilter!]
     or: [PetFilter!]
-    distinct: [PetFilter!]
     not: PetFilter
 }
-

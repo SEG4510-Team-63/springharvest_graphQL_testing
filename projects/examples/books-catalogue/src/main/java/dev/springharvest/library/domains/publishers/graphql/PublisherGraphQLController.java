@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.UUID;
 import dev.springharvest.shared.constants.DataPaging;
 import dev.springharvest.shared.domains.base.mappers.IBaseModelMapper;
+import graphql.schema.DataFetchingEnvironment;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.graphql.data.method.annotation.Argument;
@@ -24,7 +25,12 @@ public class PublisherGraphQLController extends AbstractGraphQLCrudController<Pu
   }
 
     @QueryMapping
-    public List<PublisherDTO> searchPublishers(@Argument @NotNull Map<String, Object> filter, @Argument DataPaging paging) {
-      return paging != null ? search(filter, paging) : search(filter);
+    public List<PublisherDTO> searchPublishers(@Argument Map<String, Object> filter, @Argument Map<String, Object> operation, @Argument DataPaging paging, DataFetchingEnvironment environment) {
+      return paging != null ? search(filter, operation, paging, environment) : search(filter, operation, environment);
     }
+
+  @QueryMapping
+  public String countPublishers(@Argument Map<String, Object> filter, @Argument Map<String, Object> operation) {
+    return count(filter, operation);
+  }
 }

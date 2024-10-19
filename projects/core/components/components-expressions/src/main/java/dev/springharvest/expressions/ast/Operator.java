@@ -15,7 +15,7 @@ public enum Operator {
     AND("and", "Logical",  Kind.COMPOUND),
     OR ("or", "Logical",  Kind.COMPOUND),
     NOT ("not", "Logical", Kind.UNARY),
-    DISTINCT("distinct", "Logical", Kind.COMPOUND),
+    DISTINCT("distinct", "Operational", Kind.BINARY),
 
     /* String Operators */
     EQUALS("equals", "String", Kind.BINARY),

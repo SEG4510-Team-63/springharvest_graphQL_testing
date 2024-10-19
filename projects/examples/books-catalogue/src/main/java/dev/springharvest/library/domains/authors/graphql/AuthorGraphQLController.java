@@ -8,6 +8,7 @@ import java.util.*;
 import dev.springharvest.library.domains.authors.services.AuthorSpecificationCrudService;
 import dev.springharvest.shared.constants.DataPaging;
 import dev.springharvest.shared.domains.base.mappers.IBaseModelMapper;
+import graphql.schema.DataFetchingEnvironment;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,8 +26,13 @@ public class AuthorGraphQLController extends AbstractGraphQLCrudController<Autho
   }
 
   @QueryMapping
-  public List<AuthorDTO> searchAuthors(@Argument @NotNull Map<String, Object> filter, @Argument DataPaging paging) {
-    return paging != null ? search(filter, paging) : search(filter);
+  public List<AuthorDTO> searchAuthors(@Argument Map<String, Object> filter, @Argument Map<String, Object> operation, @Argument DataPaging paging, DataFetchingEnvironment environment) {
+    return paging != null ? search(filter, operation, paging, environment) : search(filter, operation, environment);
+  }
+
+  @QueryMapping
+  public String countAuthors(@Argument Map<String, Object> filter, @Argument Map<String, Object> operation) {
+    return count(filter, operation);
   }
 
 

@@ -1,5 +1,6 @@
 extend type Query {
-    searchPublishers(filter: PublisherFilter = {}, paging: PageRequest = {page: 0, size: 20, sortOrders: "name", sortDirection: "D"}): [Publisher!]
+    searchPublishers(filter: PublisherFilter = {}, operation: OperationFilter = {}, paging: PageRequest = {page: 0, size: 20, sortOrders: "name", sortDirection: "D"}): [Publisher!]
+    countPublishers(filter : PublisherFilter = {}, operation: OperationFilter = {}) : String
 }
 
 type Publisher implements BaseEntity{
@@ -15,6 +16,5 @@ input PublisherFilter{
 
     and: [PublisherFilter!]
     or: [PublisherFilter!]
-    distinct: [PublisherFilter!]
     not: PublisherFilter
 }

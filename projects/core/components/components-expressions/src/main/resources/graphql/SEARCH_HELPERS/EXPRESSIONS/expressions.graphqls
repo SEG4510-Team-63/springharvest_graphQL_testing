@@ -34,3 +34,8 @@ input DateExpression {
     lte: Date
     between: [Date!]
 }
+
+input OperationFilter
+{
+    distinct : Boolean
+}

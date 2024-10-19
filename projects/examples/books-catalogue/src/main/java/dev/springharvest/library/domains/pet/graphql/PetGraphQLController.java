@@ -1,4 +1,4 @@
-package dev.springharvest.library.domains.pet.controllers.graphql;
+package dev.springharvest.library.domains.pet.graphql;
 
 import dev.springharvest.crud.domains.base.graphql.AbstractGraphQLCrudController;
 import dev.springharvest.library.domains.pet.models.dtos.PetDTO;
@@ -6,6 +6,7 @@ import dev.springharvest.library.domains.pet.models.entities.PetEntity;
 import dev.springharvest.library.domains.pet.service.PetSpecificationCrudService;
 import dev.springharvest.shared.constants.DataPaging;
 import dev.springharvest.shared.domains.base.mappers.IBaseModelMapper;
+import graphql.schema.DataFetchingEnvironment;
 import jakarta.validation.constraints.NotNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,7 +28,12 @@ public class PetGraphQLController extends AbstractGraphQLCrudController<PetDTO, 
     }
 
     @QueryMapping
-    public List<PetDTO> searchPets(@Argument @NotNull Map<String, Object> filter, @Argument DataPaging paging) {
-        return paging != null ? search(filter, paging) : search(filter);
+    public List<PetDTO> searchPets(@Argument Map<String, Object> filter, @Argument Map<String, Object> operation, @Argument DataPaging paging, DataFetchingEnvironment environment) {
+        return paging != null ? search(filter, operation, paging, environment) : search(filter, operation, environment);
+    }
+
+    @QueryMapping
+    public String countPets(@Argument Map<String, Object> filter, @Argument Map<String, Object> operation) {
+        return count(filter, operation);
     }
 }

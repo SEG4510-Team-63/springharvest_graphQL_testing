@@ -1,4 +1,4 @@
-package dev.springharvest.library.domains.books.controllers.rest;
+package dev.springharvest.library.domains.books.rest;
 
 
 import dev.springharvest.library.domains.books.constants.BookConstants;

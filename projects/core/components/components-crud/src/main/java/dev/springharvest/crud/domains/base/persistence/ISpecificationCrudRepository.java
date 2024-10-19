@@ -2,6 +2,8 @@ package dev.springharvest.crud.domains.base.persistence;
 
 import dev.springharvest.shared.domains.base.models.entities.BaseEntity;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.repository.ListCrudRepository;
+import org.springframework.data.repository.ListPagingAndSortingRepository;
 
 import java.io.Serializable;
 
@@ -13,5 +15,5 @@ import java.io.Serializable;
  * @see ICrudRepository
  */
 public interface ISpecificationCrudRepository<E extends BaseEntity<K>, K extends Serializable>
-        extends ICrudRepository<E, K>, JpaSpecificationExecutor<E> {
+        extends ListCrudRepository<E, K>, ListPagingAndSortingRepository<E, K>, JpaSpecificationExecutor<E> {
 }

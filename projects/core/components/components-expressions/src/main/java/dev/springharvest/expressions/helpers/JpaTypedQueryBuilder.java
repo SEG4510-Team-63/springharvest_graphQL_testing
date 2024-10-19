@@ -1,9 +1,12 @@
 package dev.springharvest.expressions.helpers;
 
+import dev.springharvest.expressions.ast.Operation;
 import dev.springharvest.expressions.ast.Operator;
-import jakarta.persistence.AttributeOverride;
+import jakarta.persistence.*;
 import jakarta.persistence.criteria.*;
-import org.springframework.data.jpa.domain.Specification;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+import org.testcontainers.shaded.org.bouncycastle.oer.Switch;
 
 import java.lang.reflect.Field;
 import java.time.LocalDate;
@@ -18,65 +21,162 @@ import java.util.*;
  *
  * @author NeroNemesis
  */
-public class JpaSpecificationBuilder {
-    public static <T> Specification<T> parseFilterExpression(Map<String, Object> filterMap, Class<T> rootClass, List<String> fields) {
-        System.out.println("---------2----------------");
-        System.out.println(fields);
-        String rootOperator = determineRootOperator(filterMap);
-        fields = CleanFields(rootClass, fields);
-        System.out.println("---------2----------------");
-        System.out.println(fields);
-        return createSpecification(filterMap, rootClass, "", rootOperator, fields);
+@Component
+public class JpaTypedQueryBuilder {
+
+    @Autowired
+    private EntityManagerFactory entityManagerFactory;
+
+    public <T> List<Object> parseFilterExpression(Map<String, Object> filterMap, Map<String, Object> operationMap, Class<T> rootClass, List<String> fields, Operation operation) {
+        EntityManager entityManager = entityManagerFactory.createEntityManager();
+
+        try {
+            fields = CleanFields(rootClass, fields);
+            CriteriaBuilder criteriaBuilder = entityManager.getCriteriaBuilder();
+            CriteriaQuery<Object> criteriaQuery = criteriaBuilder.createQuery(Object.class);
+            Root<T> root = criteriaQuery.from(rootClass);
+
+            if (filterMap == null || filterMap.isEmpty()) {
+                return applyOperations(criteriaBuilder, criteriaQuery, entityManager, null, operationMap, root, fields, operation, null, rootClass, null);
+            }
+
+            String rootOperator = determineRootOperator(filterMap);
+            Predicate predicate = createTypedQuery(filterMap, criteriaBuilder, rootClass, root, "", rootOperator, fields, criteriaQuery);
+            criteriaQuery.where(predicate);
+
+            return applyOperations(criteriaBuilder, criteriaQuery, entityManager, predicate, operationMap, root, fields, operation, filterMap, rootClass, rootOperator);
+
+        } finally {
+            if (entityManager != null && entityManager.isOpen()) {
+                entityManager.close();
+            }
+        }
     }
 
-    private static <T> Specification<T> createSpecification(Map<String, Object> filterMap, Class<T> rootClass, String parentPath, String rootOperator, List<String> fields) {
-        List<Specification<T>> specifications = new ArrayList<>();
+    private <T> List<Object> applyOperations(CriteriaBuilder criteriaBuilder, CriteriaQuery<Object> criteriaQuery, EntityManager entityManager, Predicate predicate, Map<String, Object> operationMap, Root<T> root, List<String> fields, Operation operation, Map<String, Object> filterMap, Class<T> rootClass, String rootOperator) {
+        TypedQuery<Object> typedQuery;
+
+        // If there are no operations, return the query results as is
+
+        if (operationMap == null || operationMap.isEmpty()) {
+            if (operation == Operation.SEARCH) {
+                applyFieldProjection(criteriaQuery, root, fields);
+                typedQuery = entityManager.createQuery(criteriaQuery);
+                return typedQuery.getResultList();
+            }
+            else if (operation == Operation.COUNT) {
+                CriteriaQuery<Long> countQuery = criteriaBuilder.createQuery(Long.class);
+                countQuery.select(criteriaBuilder.count(criteriaQuery.getRoots().iterator().next()));
+                if (predicate != null) countQuery.where(predicate); // We apply predicate if present
+                return List.of(entityManager.createQuery(countQuery).getSingleResult());
+            }
+            //Other future operations can be added here
+            else
+                throw new IllegalArgumentException("No such operation");
+        }
+
+        boolean distinct = false;
+
+        // Extract distinct and count operations from the operationMap
+        for (Map.Entry<String, Object> entry : operationMap.entrySet()) {
+            String key = entry.getKey();
+            Object value = entry.getValue();
+            Operator op = Operator.getOperator(key);
+
+            switch (op) {
+                case DISTINCT -> distinct = (boolean) value;
+                default -> throw new IllegalArgumentException("Not an operational operator");
+            }
+        }
+
+        if (operation == Operation.SEARCH) {
+            if (distinct) {
+                applyFieldProjection(criteriaQuery, root, fields);
+                criteriaQuery.distinct(true);
+                typedQuery = entityManager.createQuery(criteriaQuery);
+                return typedQuery.getResultList();
+            }
+            //if clauses other than distinct are added in the future handle them here
+            else {
+                applyFieldProjection(criteriaQuery, root, fields);
+                typedQuery = entityManager.createQuery(criteriaQuery);
+                return typedQuery.getResultList();
+            }
+        }
+        else if (operation == Operation.COUNT) {
+            CriteriaQuery<Long> countQuery = criteriaBuilder.createQuery(Long.class);
+            if (distinct) {
+                //Subquery<Long> subquery = countQuery.subquery(Long.class);
+                Root<?> subRoot = countQuery.from(root.getJavaType()); // Use root entity type for counting distinct
+                //countQuery.select(criteriaBuilder.countDistinct(subRoot)); // Select distinct root entities for the count
+                Predicate pr = filterMap != null ? createTypedQuery(filterMap, criteriaBuilder, rootClass, (Root) subRoot, "", rootOperator, fields, criteriaQuery) : null;
+
+
+                countQuery.select(criteriaBuilder.countDistinct(subRoot));
+                if (pr != null) {
+                    countQuery.where(pr); // Apply filtering conditions
+                }
+            } else {
+                Root<?> subRoot = countQuery.from(root.getJavaType()); // Use root entity type for counting distinct
+                countQuery.select(criteriaBuilder.count(subRoot)); // Regular count without distinct
+
+                Predicate pr = filterMap != null ? createTypedQuery(filterMap, criteriaBuilder, rootClass, (Root) subRoot, "", rootOperator, fields, criteriaQuery) : null;
+                if (pr != null) {
+                    countQuery.where(pr); // Apply filtering conditions
+                }
+            }
+
+            return List.of(entityManager.createQuery(countQuery).getSingleResult());
+        }
+        else
+            throw new IllegalArgumentException("No such operation.");
+    }
+
+    private static <T> Predicate createTypedQuery(Map<String, Object> filterMap, CriteriaBuilder builder, Class<T> rootClass, Root<T> root, String parentPath, String rootOperator, List<String> fields, CriteriaQuery<?> query) {
+        List<Predicate> predicates = new ArrayList<>();
 
         for (Map.Entry<String, Object> entry : filterMap.entrySet()) {
             String key = entry.getKey();
             Object value = entry.getValue();
 
             if (isLogicalOperator(key)) {
-                if (Operator.getOperator(key).getKind() != Operator.Kind.UNARY)
-                    specifications.add(createLogicalOperatorSpecification(key, (List<Map<String, Object>>) value, rootClass, parentPath, fields));
-                else
-                    specifications.add(createUnaryOperatorSpecification((Map<String, Object>) value, rootClass, parentPath, fields));
+                if (Operator.getOperator(key).getKind() != Operator.Kind.UNARY) {
+                    predicates.add(createLogicalOperatorTypedQuery(key, (List<Map<String, Object>>) value, builder, rootClass, root, parentPath, fields, query));
+                } else {
+                    predicates.add(createUnaryOperatorTypedQuery((Map<String, Object>) value, builder, rootClass, root, parentPath, fields, query));
+                }
             } else if (isComplexField(rootClass, key)) {
-                System.out.println(key);
                 String newPath = parentPath.isEmpty() ? key : parentPath + "." + key;
                 Class<?> nestedClass = getFieldType(rootClass, key);
-                String subOperator = determineRootOperator((Map<String, Object>) value); //and
-                specifications.add(createSpecification((Map<String, Object>) value, (Class)nestedClass, newPath, subOperator, fields));
+                String subOperator = determineRootOperator((Map<String, Object>) value);
+                predicates.add(createTypedQuery((Map<String, Object>) value, builder, (Class) nestedClass, root, newPath, subOperator, fields, query));
             } else {
-                specifications.add(createSimpleFieldSpecification(key, value, parentPath, rootClass, fields));
+                predicates.add(createSimpleFieldTypedQuery(key, value, parentPath, rootClass, builder, root, fields));
             }
         }
 
-        return combineSpecifications(specifications, rootOperator);
+        return combinePredicates(predicates, builder, rootOperator, query, root);
     }
 
-    private static <T> Specification<T> createLogicalOperatorSpecification(String operator, List<Map<String, Object>> value, Class<T> rootClass, String parentPath, List<String> fields) {
-        List<Specification<T>> subSpecifications = new ArrayList<>();
+    private static <T> Predicate createLogicalOperatorTypedQuery(String operator, List<Map<String, Object>> value, CriteriaBuilder builder, Class<T> rootClass, Root<T> root, String parentPath, List<String> fields, CriteriaQuery<?> query) {
+        List<Predicate> subPredicates = new ArrayList<>();
+
         for (Map<String, Object> subFilter : value) {
             String subOperator = determineRootOperator(subFilter);
-            subSpecifications.add(createSpecification(subFilter, rootClass, parentPath, subOperator, fields));
+            subPredicates.add(createTypedQuery(subFilter, builder, rootClass, root, parentPath, subOperator, fields, query));
         }
 
-        return combineSpecifications(subSpecifications, operator);
+        return combinePredicates(subPredicates, builder, operator, query, root);
     }
 
-    private static <T> Specification<T> createUnaryOperatorSpecification(Map<String, Object> value, Class<T> rootClass, String parentPath, List<String> fields) {
-        Specification<T> spec = createSpecification(value, rootClass, parentPath, determineRootOperator(value), fields);
-        return Specification.not(spec);
+    private static <T> Predicate createUnaryOperatorTypedQuery(Map<String, Object> value, CriteriaBuilder builder, Class<T> rootClass, Root<T> root, String parentPath, List<String> fields, CriteriaQuery<?> query) {
+        Predicate predicate = createTypedQuery(value, builder, rootClass, root, parentPath, determineRootOperator(value), fields, query);
+        return builder.not(predicate);
     }
 
-    private static <T> Specification<T> createSimpleFieldSpecification(String key, Object value, String parentPath, Class<T> rootClass, List<String> fields) {
-        return (root, query, builder) -> {
-            Path<?> path = getPath(root, parentPath, key, rootClass);
-            applyFieldProjection(query, root, fields);
-            Predicate predicate = createPredicate(builder, path, value, getFieldType(rootClass, key));
-            return predicate;
-        };
+    private static <T> Predicate createSimpleFieldTypedQuery(String key, Object value, String parentPath, Class<T> rootClass, CriteriaBuilder builder, Root<T> root, List<String> fields) {
+        Path<?> path = getPath(root, parentPath, key, rootClass);
+        return createPredicate(builder, path, value, getFieldType(rootClass, key));
     }
 
     private static void applyFieldProjection(CriteriaQuery<?> query, Root<?> root, List<String> fields) {
@@ -213,23 +313,25 @@ public class JpaSpecificationBuilder {
         return "and";
     }
 
-    private static <T> Specification<T> combineSpecifications(List<Specification<T>> specifications, String operator) {
-        Specification<T> result = null;
-        for (Specification<T> spec : specifications) {
-            if (result == null) {
-                result = spec;
+    private static <T> Predicate combinePredicates(List<Predicate> predicates, CriteriaBuilder builder, String operator, CriteriaQuery<?> query, Root<T> root) {
+        Predicate combinedPredicate = null;
+
+        for (Predicate predicate : predicates) {
+            if (combinedPredicate == null) {
+                combinedPredicate = predicate;
             } else {
                 Operator op = Operator.getOperator(operator);
-                result = switch (op) {
-                    case AND -> Specification.where(result).and(spec);
-                    case OR -> Specification.where(result).or(spec);
-                    case DISTINCT -> (Specification<T>) Specification.where(distinct().and((Specification<Object>) Specification.where(result).and(spec)));
-                    case NOT -> result.and(Specification.not(spec));
-                    default -> result;
+                combinedPredicate = switch (op) {
+                    case AND -> builder.and(combinedPredicate, predicate);
+                    case OR -> builder.or(combinedPredicate, predicate);
+                    case NOT -> builder.not(combinedPredicate);
+                    case DISTINCT -> combinedPredicate;
+                    default -> combinedPredicate;
                 };
             }
         }
-        return result;
+
+        return combinedPredicate;
     }
 
     private static boolean isComplexField(Class<?> clazz, String fieldName) {
@@ -237,12 +339,12 @@ public class JpaSpecificationBuilder {
             Class<?> fieldType = getActualFieldType(clazz, fieldName);
             return !fieldType.isPrimitive()
                     && !fieldType.equals(String.class)
-                        && !isOverriddenField(clazz, fieldName)
-                            && !fieldType.equals(UUID.class)
-                                && !fieldType.equals(Date.class)
-                                    && !fieldType.equals(LocalDate.class)
-                                        && !fieldType.equals(LocalDateTime.class)
-                                            && !fieldType.equals(OffsetDateTime.class);
+                    && !isOverriddenField(clazz, fieldName)
+                    && !fieldType.equals(UUID.class)
+                    && !fieldType.equals(Date.class)
+                    && !fieldType.equals(LocalDate.class)
+                    && !fieldType.equals(LocalDateTime.class)
+                    && !fieldType.equals(OffsetDateTime.class);
         } catch (NoSuchFieldException e) {
             throw new RuntimeException(e);
         }
@@ -311,32 +413,27 @@ public class JpaSpecificationBuilder {
         }
         if (value instanceof LocalDate) {
             LocalDate localDate = (LocalDate) value;
-            value = java.util.Date.from(localDate.atStartOfDay()
+            value = Date.from(localDate.atStartOfDay()
                     .atZone(ZoneId.systemDefault())
                     .toInstant());
         } else if (value instanceof LocalDateTime) {
             LocalDateTime localDateTime = (LocalDateTime) value;
-            value = java.util.Date
+            value = Date
                     .from(localDateTime.atZone(ZoneId.systemDefault())
                             .toInstant());
         } else if (value instanceof OffsetDateTime) {
             OffsetDateTime offsetDateTime = (OffsetDateTime) value;
-            value = java.util.Date
+            value = Date
                     .from(offsetDateTime.toInstant());
         }
         return value;
     }
 
-    /*allows to perform distinct operations*/
-    public static <T> Specification<T> distinct() {
-        return (root, query, cb) -> {
-            query.distinct(true);
-            return null;
-        };
-    }
-
     public static List<String> CleanFields(Class<?> rootClass, List<String> fields) {
         // Create a copy of the fields list to avoid concurrent modification issues
+        if (fields == null)
+            return new ArrayList<>();
+
         List<String> cleanedFields = new ArrayList<>(fields);
 
         for (int i = 0; i < cleanedFields.size(); i++) {

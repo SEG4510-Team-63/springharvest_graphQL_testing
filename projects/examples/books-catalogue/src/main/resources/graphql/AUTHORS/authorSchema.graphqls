@@ -1,5 +1,6 @@
 extend type Query {
-    searchAuthors(filter: AuthorFilter = {}, paging: PageRequest = { page: 0, size: 20, sortOrders: "name", sortDirection: "D" }) : [Author!]
+    searchAuthors(filter: AuthorFilter = {}, operation: OperationFilter = {}, paging: PageRequest = { page: 0, size: 20, sortOrders: "name", sortDirection: "D" }) : [Author!]
+    countAuthors(filter : AuthorFilter = {}, operation: OperationFilter = {}) : String
 }
 
 extend type Mutation {
@@ -21,7 +22,6 @@ input AuthorFilter{
 
     and: [AuthorFilter!]
     or: [AuthorFilter!]
-    distinct: [AuthorFilter!]
     not: AuthorFilter
 }
 
