@@ -17,7 +17,7 @@ import java.util.*;
 
 /**
  * This class is responsible for helping build
- * JPA Specifications from a filter map.
+ * Typed queries from a filter map.
  *
  * @author NeroNemesis
  */
@@ -103,6 +103,7 @@ public class JpaTypedQueryBuilder {
                 return typedQuery.getResultList();
             }
         }
+
         else if (operation == Operation.COUNT) {
             CriteriaQuery<Long> countQuery = criteriaBuilder.createQuery(Long.class);
             if (distinct) {
@@ -325,7 +326,7 @@ public class JpaTypedQueryBuilder {
                     case AND -> builder.and(combinedPredicate, predicate);
                     case OR -> builder.or(combinedPredicate, predicate);
                     case NOT -> builder.not(combinedPredicate);
-                    case DISTINCT -> combinedPredicate;
+                    //case DISTINCT -> combinedPredicate;
                     default -> combinedPredicate;
                 };
             }
