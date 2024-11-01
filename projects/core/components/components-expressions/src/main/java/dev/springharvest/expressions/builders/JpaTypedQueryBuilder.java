@@ -1,12 +1,11 @@
-package dev.springharvest.expressions.helpers;
+package dev.springharvest.expressions.builders;
 
-import dev.springharvest.expressions.ast.Operation;
-import dev.springharvest.expressions.ast.Operator;
+import dev.springharvest.expressions.helpers.Operation;
+import dev.springharvest.expressions.helpers.Operator;
 import jakarta.persistence.*;
 import jakarta.persistence.criteria.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import org.testcontainers.shaded.org.bouncycastle.oer.Switch;
 
 import java.lang.reflect.Field;
 import java.time.LocalDate;

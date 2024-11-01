@@ -1,6 +1,6 @@
-package dev.springharvest.expressions.helpers;
+package dev.springharvest.expressions.builders;
 
-import dev.springharvest.expressions.ast.Operator;
+import dev.springharvest.expressions.helpers.Operator;
 import jakarta.persistence.AttributeOverride;
 import jakarta.persistence.criteria.*;
 import org.springframework.data.jpa.domain.Specification;

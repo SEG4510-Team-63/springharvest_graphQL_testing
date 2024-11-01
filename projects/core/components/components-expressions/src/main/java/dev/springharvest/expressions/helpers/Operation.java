@@ -1,4 +1,4 @@
-package dev.springharvest.expressions.ast;
+package dev.springharvest.expressions.helpers;
 
 import lombok.Getter;
 
