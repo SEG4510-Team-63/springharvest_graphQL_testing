@@ -2,5 +2,10 @@ plugins {
 }
 
 dependencies {
-    testImplementation project(':projects:core:components:components-shared')
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.8.1'
+}
+
+test {
+    useJUnitPlatform()
+    include 'dev/springharvest/expression/unit/JpaTypedQueryBuilderTest'
 }
