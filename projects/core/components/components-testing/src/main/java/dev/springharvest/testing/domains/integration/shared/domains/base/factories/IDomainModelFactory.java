@@ -9,6 +9,9 @@ import dev.springharvest.shared.domains.embeddables.traces.traceable.models.dtos
 import dev.springharvest.shared.domains.embeddables.traces.users.models.dtos.AbstractTraceUsersDTO;
 import dev.springharvest.shared.utils.StringUtils;
 import jakarta.annotation.Nullable;
+
+import java.time.Duration;
+import java.time.ZoneId;
 import java.util.List;
 import org.apache.commons.lang3.ObjectUtils;
 import org.assertj.core.api.SoftAssertions;
@@ -51,7 +54,12 @@ public interface IDomainModelFactory<D extends DomainModel> {
 
       softly.assertThat(actualTraceDates).isNotNull();
       softly.assertThat(expectedTraceDates).isNotNull();
-      long createdTimeDifferenceInMilliSeconds = actualTraceDates.getDateCreated().getTime() - expectedTraceDates.getDateUpdated().getTime();
+      //long createdTimeDifferenceInMilliSeconds = actualTraceDates.getDateCreated().getTime() - expectedTraceDates.getDateUpdated().getTime();
+      long createdTimeDifferenceInMilliSeconds = Duration.between(
+              expectedTraceDates.getDateUpdated().atStartOfDay(ZoneId.systemDefault()).toInstant(),
+              actualTraceDates.getDateCreated().atStartOfDay(ZoneId.systemDefault()).toInstant()
+      ).toMillis();
+
       long createdTimeDifferenceInSeconds = createdTimeDifferenceInMilliSeconds / 1000;
       long createdTimeDifferenceInMinutes = createdTimeDifferenceInSeconds / 60;
       // If the following two assertions fail, then there is a performance issue.

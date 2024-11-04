@@ -1,4 +1,4 @@
-package dev.springharvest.expression.unit;
+package dev.springharvest.expressions.helpers.unit;
 
 import dev.springharvest.expressions.ast.Operation;
 import dev.springharvest.expressions.helpers.JpaTypedQueryBuilder;
@@ -54,7 +54,7 @@ public class JpaTypedQueryBuilderTest {
     }
 
     @Test
-    public void testParseFilterExpression_withValidInput() {
+    void testParseFilterExpression_withValidInput() {
         Map<String, Object> filterMap = Map.of("name", "TestName");
         Map<String, Object> operationMap = Map.of("operation", "equals");
         List<String> fields = List.of("name");
@@ -71,7 +71,7 @@ public class JpaTypedQueryBuilderTest {
     }
 
     @Test
-    public void testParseFilterExpression_withNullFilterAndOperationMaps() {
+    void testParseFilterExpression_withNullFilterAndOperationMaps() {
         // Arrange
         Map<String, Object> filterMap = null;
         Map<String, Object> operationMap = null;
