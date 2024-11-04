@@ -26,8 +26,8 @@ public interface IGraphQLCrudController<D extends BaseDTO<K>, K extends Serializ
                     @Parameter(description = "The map containing the query",
                             name = "filter",
                             required = true),
-                    @Parameter(description = "The map containing the type of operation to be performed on the query",
-                            name = "operation",
+                    @Parameter(description = "The map containing the type of clause to be performed on the query",
+                            name = "clause",
                             required = true),
                     @Parameter(description = "The paging request, determining the number of entities that should be returned, their sort orders and their sort direction as well",
                             name = "paging",
@@ -37,7 +37,7 @@ public interface IGraphQLCrudController<D extends BaseDTO<K>, K extends Serializ
                             required = true),
             },
             responses = {@ApiResponse(responseCode = "200", description = "The queried entities ordered according to the paging or their count.")})
-    List<D> search(@RequestParam(name = "filter") Map<String, Object> filter, @RequestParam(name = "operation") Map<String, Object> operation, @RequestParam(name = "paging") DataPaging paging, @RequestParam(name = "environment") DataFetchingEnvironment environment);
+    List<D> search(@RequestParam(name = "filter") Map<String, Object> filter, @RequestParam(name = "clause") Map<String, Object> clause, @RequestParam(name = "paging") DataPaging paging, @RequestParam(name = "environment") DataFetchingEnvironment environment);
 
     @Operation(operationId = "search", summary = "Performs almost any type of search query on the entity.",
             description = "Use this API to retrieve entities corresponding to the passed query inside the filter.",
@@ -45,15 +45,15 @@ public interface IGraphQLCrudController<D extends BaseDTO<K>, K extends Serializ
                     @Parameter(description = "The map containing the query",
                             name = "filter",
                             required = true),
-                    @Parameter(description = "The map containing the type of operation to be performed on the query",
-                            name = "operation",
+                    @Parameter(description = "The map containing the type of clause to be performed on the query",
+                            name = "clause",
                             required = true),
                     @Parameter(description = "The GraphQL data fetching environment that allows us to retrieve what fields where selected to be displayed by the user",
                             name = "environment",
                             required = true),
             },
             responses = {@ApiResponse(responseCode = "200", description = "The queried entities.")})
-    List<D> search(@RequestParam(name = "filter") Map<String, Object> filter, @RequestParam(name = "operation") Map<String, Object> operation, @RequestParam(name = "environment") DataFetchingEnvironment environment);
+    List<D> search(@RequestParam(name = "filter") Map<String, Object> filter, @RequestParam(name = "clause") Map<String, Object> clause, @RequestParam(name = "environment") DataFetchingEnvironment environment);
 
     @Operation(operationId = "count", summary = "Performs count operations on an entity.",
             description = "Use this API to retrieve entities count corresponding to the passed query inside the filter.",
@@ -61,10 +61,13 @@ public interface IGraphQLCrudController<D extends BaseDTO<K>, K extends Serializ
                     @Parameter(description = "The map containing the query",
                             name = "filter",
                             required = true),
-                    @Parameter(description = "The map containing the type of operation to be performed on the query",
-                            name = "operation",
+                    @Parameter(description = "The map containing the type of clause to be performed on the query",
+                            name = "clause",
                             required = true),
+                    @Parameter(description = "The fields to applay the distinct clause on",
+                            name = "fields",
+                            required = true)
             },
             responses = {@ApiResponse(responseCode = "200", description = "The queried entities count.")})
-    String count(@RequestParam(name = "filter") Map<String, Object> filter, @RequestParam(name = "operation") Map<String, Object> operation);
+    String count(@RequestParam(name = "filter") Map<String, Object> filter, @RequestParam(name = "clause") Map<String, Object> clause, @RequestParam(name = "fields") List<String> fields);
 }

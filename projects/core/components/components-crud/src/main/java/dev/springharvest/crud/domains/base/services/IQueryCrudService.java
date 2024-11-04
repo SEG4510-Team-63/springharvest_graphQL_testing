@@ -14,7 +14,7 @@ import java.util.List;
  * @param <E> The type of the Entity.
  * @param <K> The type of the id (primary key) field.
  */
-public interface ISpecificationCrudService<E extends BaseEntity<K>, K extends Serializable> {
+public interface IQueryCrudService<E extends BaseEntity<K>, K extends Serializable> {
     /**
      * Returns true if an entity with the given id exists, false otherwise.
      *

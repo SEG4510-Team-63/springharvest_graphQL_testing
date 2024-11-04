@@ -14,6 +14,6 @@ import java.io.Serializable;
  * @param <K> The type of the id (primary key) field.
  * @see ICrudRepository
  */
-public interface ISpecificationCrudRepository<E extends BaseEntity<K>, K extends Serializable>
+public interface IQueryCrudRepository<E extends BaseEntity<K>, K extends Serializable>
         extends ListCrudRepository<E, K>, ListPagingAndSortingRepository<E, K>, JpaSpecificationExecutor<E> {
 }

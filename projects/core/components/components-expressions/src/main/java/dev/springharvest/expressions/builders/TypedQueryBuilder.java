@@ -21,12 +21,12 @@ import java.util.*;
  * @author NeroNemesis
  */
 @Component
-public class JpaTypedQueryBuilder {
+public class TypedQueryBuilder {
 
     @Autowired
     private EntityManagerFactory entityManagerFactory;
 
-    public <T> List<Object> parseFilterExpression(Map<String, Object> filterMap, Map<String, Object> operationMap, Class<T> rootClass, List<String> fields, Operation operation) {
+    public <T> List<Object> parseFilterExpression(Map<String, Object> filterMap, Map<String, Object> clauseMap, Class<T> rootClass, List<String> fields, Operation operation) {
         EntityManager entityManager = entityManagerFactory.createEntityManager();
 
         try {
@@ -36,14 +36,14 @@ public class JpaTypedQueryBuilder {
             Root<T> root = criteriaQuery.from(rootClass);
 
             if (filterMap == null || filterMap.isEmpty()) {
-                return applyOperations(criteriaBuilder, criteriaQuery, entityManager, null, operationMap, root, fields, operation, null, rootClass, null);
+                return applyOperations(criteriaBuilder, criteriaQuery, entityManager, clauseMap, root, fields, operation, null, rootClass, null);
             }
 
             String rootOperator = determineRootOperator(filterMap);
             Predicate predicate = createTypedQuery(filterMap, criteriaBuilder, rootClass, root, "", rootOperator, fields, criteriaQuery);
             criteriaQuery.where(predicate);
 
-            return applyOperations(criteriaBuilder, criteriaQuery, entityManager, predicate, operationMap, root, fields, operation, filterMap, rootClass, rootOperator);
+            return applyOperations(criteriaBuilder, criteriaQuery, entityManager, clauseMap, root, fields, operation, filterMap, rootClass, rootOperator);
 
         } finally {
             if (entityManager != null && entityManager.isOpen()) {
@@ -52,84 +52,48 @@ public class JpaTypedQueryBuilder {
         }
     }
 
-    private <T> List<Object> applyOperations(CriteriaBuilder criteriaBuilder, CriteriaQuery<Object> criteriaQuery, EntityManager entityManager, Predicate predicate, Map<String, Object> operationMap, Root<T> root, List<String> fields, Operation operation, Map<String, Object> filterMap, Class<T> rootClass, String rootOperator) {
-        TypedQuery<Object> typedQuery;
+    private <T> List<Object> applyOperations(CriteriaBuilder criteriaBuilder, CriteriaQuery<Object> criteriaQuery, EntityManager entityManager, Map<String, Object> operationMap, Root<T> root, List<String> fields, Operation operation, Map<String, Object> filterMap, Class<T> rootClass, String rootOperator) {
+        boolean distinct = operationMap != null && Boolean.TRUE.equals(operationMap.get("distinct"));
 
-        // If there are no operations, return the query results as is
-
-        if (operationMap == null || operationMap.isEmpty()) {
-            if (operation == Operation.SEARCH) {
+        switch (operation) {
+            case SEARCH:
                 applyFieldProjection(criteriaQuery, root, fields);
-                typedQuery = entityManager.createQuery(criteriaQuery);
-                return typedQuery.getResultList();
-            }
-            else if (operation == Operation.COUNT) {
-                CriteriaQuery<Long> countQuery = criteriaBuilder.createQuery(Long.class);
-                countQuery.select(criteriaBuilder.count(criteriaQuery.getRoots().iterator().next()));
-                if (predicate != null) countQuery.where(predicate); // We apply predicate if present
+                if (distinct) {
+                    criteriaQuery.distinct(true);
+                }
+                return entityManager.createQuery(criteriaQuery).getResultList();
+
+            case COUNT:
+                return handleCountOperation(criteriaBuilder, criteriaQuery, entityManager, filterMap, rootClass, fields, rootOperator, distinct, root);
+
+            default:
+                throw new IllegalArgumentException("Unsupported operation");
+        }
+    }
+
+    private <T> List<Object> handleCountOperation(CriteriaBuilder criteriaBuilder, CriteriaQuery<Object> criteriaQuery, EntityManager entityManager, Map<String, Object> filterMap, Class<T> rootClass, List<String> fields, String rootOperator, boolean distinct, Root<T> root) {
+        CriteriaQuery<Long> countQuery = criteriaBuilder.createQuery(Long.class);
+        Root<?> countRoot = countQuery.from(root.getJavaType());
+
+        Predicate filterPredicate = filterMap != null ? createTypedQuery(filterMap, criteriaBuilder, rootClass, (Root) countRoot, "", rootOperator, fields, criteriaQuery) : null;
+        if (filterPredicate != null) {
+            countQuery.where(filterPredicate);
+        }
+
+        if (distinct) {
+            if (fields == null || fields.isEmpty()) {
+                countQuery.select(criteriaBuilder.countDistinct(countRoot));
                 return List.of(entityManager.createQuery(countQuery).getSingleResult());
-            }
-            //Other future operations can be added here
-            else
-                throw new IllegalArgumentException("No such operation");
-        }
-
-        boolean distinct = false;
-
-        // Extract distinct and count operations from the operationMap
-        for (Map.Entry<String, Object> entry : operationMap.entrySet()) {
-            String key = entry.getKey();
-            Object value = entry.getValue();
-            Operator op = Operator.getOperator(key);
-
-            switch (op) {
-                case DISTINCT -> distinct = (boolean) value;
-                default -> throw new IllegalArgumentException("Not an operational operator");
-            }
-        }
-
-        if (operation == Operation.SEARCH) {
-            if (distinct) {
+            } else {
                 applyFieldProjection(criteriaQuery, root, fields);
                 criteriaQuery.distinct(true);
-                typedQuery = entityManager.createQuery(criteriaQuery);
-                return typedQuery.getResultList();
+                TypedQuery<Object> typedQuery = entityManager.createQuery(criteriaQuery);
+                return List.of((long) typedQuery.getResultList().size());
             }
-            //if clauses other than distinct are added in the future handle them here
-            else {
-                applyFieldProjection(criteriaQuery, root, fields);
-                typedQuery = entityManager.createQuery(criteriaQuery);
-                return typedQuery.getResultList();
-            }
-        }
-
-        else if (operation == Operation.COUNT) {
-            CriteriaQuery<Long> countQuery = criteriaBuilder.createQuery(Long.class);
-            if (distinct) {
-                //Subquery<Long> subquery = countQuery.subquery(Long.class);
-                Root<?> subRoot = countQuery.from(root.getJavaType()); // Use root entity type for counting distinct
-                //countQuery.select(criteriaBuilder.countDistinct(subRoot)); // Select distinct root entities for the count
-                Predicate pr = filterMap != null ? createTypedQuery(filterMap, criteriaBuilder, rootClass, (Root) subRoot, "", rootOperator, fields, criteriaQuery) : null;
-
-
-                countQuery.select(criteriaBuilder.countDistinct(subRoot));
-                if (pr != null) {
-                    countQuery.where(pr); // Apply filtering conditions
-                }
-            } else {
-                Root<?> subRoot = countQuery.from(root.getJavaType()); // Use root entity type for counting distinct
-                countQuery.select(criteriaBuilder.count(subRoot)); // Regular count without distinct
-
-                Predicate pr = filterMap != null ? createTypedQuery(filterMap, criteriaBuilder, rootClass, (Root) subRoot, "", rootOperator, fields, criteriaQuery) : null;
-                if (pr != null) {
-                    countQuery.where(pr); // Apply filtering conditions
-                }
-            }
-
+        } else {
+            countQuery.select(criteriaBuilder.count(countRoot));
             return List.of(entityManager.createQuery(countQuery).getSingleResult());
         }
-        else
-            throw new IllegalArgumentException("No such operation.");
     }
 
     private static <T> Predicate createTypedQuery(Map<String, Object> filterMap, CriteriaBuilder builder, Class<T> rootClass, Root<T> root, String parentPath, String rootOperator, List<String> fields, CriteriaQuery<?> query) {

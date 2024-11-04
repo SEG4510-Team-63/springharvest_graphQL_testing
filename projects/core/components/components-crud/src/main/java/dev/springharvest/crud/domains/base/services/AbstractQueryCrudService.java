@@ -1,7 +1,6 @@
 package dev.springharvest.crud.domains.base.services;
 
-import dev.springharvest.crud.domains.base.persistence.ICrudRepository;
-import dev.springharvest.crud.domains.base.persistence.ISpecificationCrudRepository;
+import dev.springharvest.crud.domains.base.persistence.IQueryCrudRepository;
 import dev.springharvest.shared.domains.base.models.entities.BaseEntity;
 import dev.springharvest.shared.domains.embeddables.traces.dates.models.entities.TraceDatesEntity;
 import dev.springharvest.shared.domains.embeddables.traces.trace.models.entities.TraceDataEntity;
@@ -24,12 +23,12 @@ import java.time.ZoneOffset;
 import java.util.List;
 
 @Slf4j
-public abstract class AbstractSpecificationCrudService<E extends BaseEntity<K>, K extends Serializable>
-        implements ISpecificationCrudService<E, K> {
+public abstract class AbstractQueryCrudService<E extends BaseEntity<K>, K extends Serializable>
+        implements IQueryCrudService<E, K> {
 
-    protected ISpecificationCrudRepository<E, K> crudRepository;
+    protected IQueryCrudRepository<E, K> crudRepository;
 
-    protected AbstractSpecificationCrudService(ISpecificationCrudRepository<E, K> crudRepository) {
+    protected AbstractQueryCrudService(IQueryCrudRepository<E, K> crudRepository) {
         this.crudRepository = crudRepository;
     }
 

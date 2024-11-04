@@ -1,10 +1,9 @@
 package dev.springharvest.crud.domains.base.graphql;
 
 import dev.springharvest.crud.domains.base.services.AbstractCrudService;
-import dev.springharvest.crud.domains.base.services.AbstractSpecificationCrudService;
+import dev.springharvest.crud.domains.base.services.AbstractQueryCrudService;
 import dev.springharvest.expressions.helpers.Operation;
 import dev.springharvest.expressions.builders.JpaSpecificationBuilder;
-import dev.springharvest.expressions.builders.JpaTypedQueryBuilder;
 import dev.springharvest.shared.constants.DataPaging;
 import dev.springharvest.shared.domains.base.mappers.IBaseModelMapper;
 import dev.springharvest.shared.domains.base.models.dtos.BaseDTO;
@@ -15,6 +14,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
+import dev.springharvest.expressions.builders.TypedQueryBuilder;
 
 import java.io.Serializable;
 import java.util.*;
@@ -36,14 +36,14 @@ public class AbstractGraphQLCrudController<D extends BaseDTO<K>, E extends BaseE
         implements IGraphQLCrudController<D, K> {
 
     protected IBaseModelMapper<D, E, K> modelMapper;
-    protected AbstractSpecificationCrudService<E, K> crudService;
+    protected AbstractQueryCrudService<E, K> crudService;
     protected Class<E> entityClass;
     protected List<String> Fields;
     @Autowired
-    private JpaTypedQueryBuilder TypedQueryBuilder;
+    private TypedQueryBuilder TypedQueryBuilder;
 
     protected AbstractGraphQLCrudController(IBaseModelMapper<D, E, K> modelMapper,
-                                            AbstractSpecificationCrudService<E, K> crudService,
+                                            AbstractQueryCrudService<E, K> crudService,
                                             Class<E> entityClass) {
         this.modelMapper = modelMapper;
         this.crudService = crudService;
@@ -52,7 +52,7 @@ public class AbstractGraphQLCrudController<D extends BaseDTO<K>, E extends BaseE
     }
 
     @Override
-    public List<D> search(Map<String, Object> filter, Map<String, Object> operation, DataPaging paging, DataFetchingEnvironment environment) {
+    public List<D> search(Map<String, Object> filter, Map<String, Object> clause, DataPaging paging, DataFetchingEnvironment environment) {
         var pageRequest = PageRequest.of(paging.page(), paging.size(), paging.sortDirection().name().equals("A") ? Sort.by(paging.sortOrders()).ascending() : Sort.by(paging.sortOrders()).descending());
 
 //        if (filter.isEmpty()) {
@@ -72,7 +72,7 @@ public class AbstractGraphQLCrudController<D extends BaseDTO<K>, E extends BaseE
         //System.out.println(getFormattedFields(Fields));
         List<String> fields2 = Fields;
         Specification<E> specification = JpaSpecificationBuilder.parseFilterExpression(filter, entityClass, getFormattedFields(Fields));
-        List<Object> things = TypedQueryBuilder.parseFilterExpression(filter, operation, entityClass, getFormattedFields(fields2), Operation.SEARCH);
+        List<Object> things = TypedQueryBuilder.parseFilterExpression(filter, clause, entityClass, getFormattedFields(fields2), Operation.SEARCH);
         System.out.println("things : " + things);
         System.out.println("things length : " + things.size());
 
@@ -89,7 +89,7 @@ public class AbstractGraphQLCrudController<D extends BaseDTO<K>, E extends BaseE
     }
 
     @Override
-    public List<D> search(Map<String, Object> filter, Map<String, Object> operation, DataFetchingEnvironment environment) {
+    public List<D> search(Map<String, Object> filter, Map<String, Object> clause, DataFetchingEnvironment environment) {
         if (filter.isEmpty()) {
             List<E> entityList = crudService.findAll();
             return !entityList.isEmpty() ? modelMapper.entityToDto(entityList) : List.of();
@@ -105,8 +105,8 @@ public class AbstractGraphQLCrudController<D extends BaseDTO<K>, E extends BaseE
     }
 
     @Override
-    public String count(Map<String, Object> filter, Map<String, Object> operation) {
-        List<Object> things = TypedQueryBuilder.parseFilterExpression(filter, operation, entityClass, null, Operation.COUNT);
+    public String count(Map<String, Object> filter, Map<String, Object> clause, List<String> fields) {
+        List<Object> things = TypedQueryBuilder.parseFilterExpression(filter, clause, entityClass, fields, Operation.COUNT);
         System.out.println("things : " + things);
         System.out.println("things length : " + things.size());
 

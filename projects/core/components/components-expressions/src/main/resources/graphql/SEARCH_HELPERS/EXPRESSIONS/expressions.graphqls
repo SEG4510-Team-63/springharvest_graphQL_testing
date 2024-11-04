@@ -35,7 +35,7 @@ input DateExpression {
     between: [Date!]
 }
 
-input OperationFilter
+input ClauseFilter
 {
     distinct : Boolean
 }

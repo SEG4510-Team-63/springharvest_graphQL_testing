@@ -5,12 +5,11 @@ import dev.springharvest.library.domains.authors.models.dtos.AuthorDTO;
 import dev.springharvest.library.domains.authors.models.entities.AuthorEntity;
 import java.util.*;
 
-import dev.springharvest.library.domains.authors.services.AuthorSpecificationCrudService;
+import dev.springharvest.library.domains.authors.services.AuthorQueryCrudService;
 import dev.springharvest.shared.constants.DataPaging;
 import dev.springharvest.shared.domains.base.mappers.IBaseModelMapper;
 import graphql.schema.DataFetchingEnvironment;
 import lombok.extern.slf4j.Slf4j;
-import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.graphql.data.method.annotation.Argument;
 import org.springframework.graphql.data.method.annotation.QueryMapping;
@@ -21,7 +20,7 @@ import org.springframework.stereotype.Controller;
 public class AuthorGraphQLController extends AbstractGraphQLCrudController<AuthorDTO, AuthorEntity, UUID> {
 
   @Autowired
-  protected AuthorGraphQLController(AuthorSpecificationCrudService baseService, IBaseModelMapper<AuthorDTO, AuthorEntity, UUID> modelMapper) {
+  protected AuthorGraphQLController(AuthorQueryCrudService baseService, IBaseModelMapper<AuthorDTO, AuthorEntity, UUID> modelMapper) {
     super(modelMapper, baseService, AuthorEntity.class);
   }
 
@@ -31,8 +30,8 @@ public class AuthorGraphQLController extends AbstractGraphQLCrudController<Autho
   }
 
   @QueryMapping
-  public String countAuthors(@Argument Map<String, Object> filter, @Argument Map<String, Object> operation) {
-    return count(filter, operation);
+  public String countAuthors(@Argument Map<String, Object> filter, @Argument Map<String, Object> operation, @Argument List<String> fields) {
+    return count(filter, operation, fields);
   }
 
 
