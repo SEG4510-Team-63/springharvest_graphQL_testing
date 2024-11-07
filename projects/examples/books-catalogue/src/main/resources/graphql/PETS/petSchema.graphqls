@@ -1,0 +1,22 @@
+extend type Query
+{
+    searchPets(filter: PetFilter = {}, operation: ClauseFilter = {}, paging: PageRequest = {page: 0, size: 20, sortOrders: "name", sortDirection: "D"}) : [Pet!]
+    countPets(filter : PetFilter = {}, operation: ClauseFilter = {}, fields: [String] = []) : String
+}
+
+type Pet implements BaseEntity
+{
+    id: ID!
+    name: String!
+    traceData: TraceData
+}
+
+input PetFilter{
+    id: IdExpression
+    name: StringExpression
+    traceData: TraceDataFilter
+
+    and: [PetFilter!]
+    or: [PetFilter!]
+    not: PetFilter
+}

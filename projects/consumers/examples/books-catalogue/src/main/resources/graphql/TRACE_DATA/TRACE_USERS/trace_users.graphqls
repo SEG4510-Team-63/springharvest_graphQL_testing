@@ -1,4 +1,0 @@
-type TraceUsers{
-    createdBy: ID
-    updatedBy: ID
-}

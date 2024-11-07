@@ -1,0 +1,31 @@
+extend type Query {
+    searchAuthors(filter: AuthorFilter = {}, operation: ClauseFilter = {}, paging: PageRequest = { page: 0, size: 20, sortOrders: "name", sortDirection: "D" }) : [Author!]
+    countAuthors(filter : AuthorFilter = {}, operation: ClauseFilter = {}, fields: [String] = []) : String
+}
+
+extend type Mutation {
+    authorMutation(id: ID!, input: authorMutationInput!) : Author
+}
+
+type Author implements BaseEntity{
+    id: ID!
+    name: String!
+    pet: Pet
+    traceData: TraceData
+}
+
+input AuthorFilter{
+    id: IdExpression
+    name: StringExpression
+    pet: PetFilter
+    traceData: TraceDataFilter
+
+    and: [AuthorFilter!]
+    or: [AuthorFilter!]
+    not: AuthorFilter
+}
+
+input authorMutationInput {
+    name: String!
+    updatedBy: ID!
+}

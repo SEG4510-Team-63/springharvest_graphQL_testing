@@ -1,0 +1,6 @@
+plugins {
+}
+
+dependencies {
+    testImplementation project(':projects:core:components:components-shared')
+}

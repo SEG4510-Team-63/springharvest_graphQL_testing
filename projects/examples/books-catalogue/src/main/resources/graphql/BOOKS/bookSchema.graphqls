@@ -1,0 +1,29 @@
+extend type Query
+{
+    searchBooks(filter: BookFilter = {}, operation: ClauseFilter = {}, paging: PageRequest = {page: 0, size: 20, sortOrders: "title", sortDirection: "D"}) : [Book!]
+    countBooks(filter : BookFilter = {}, operation: ClauseFilter = {}, fields: [String] = []) : String
+}
+
+type Book implements BaseEntity
+{
+    id: ID!
+    title: String!
+    genre: String!
+    author: Author!
+    publisher: Publisher!
+    traceData: TraceData
+}
+
+input BookFilter{
+    id: IdExpression
+    title: StringExpression
+    genre: StringExpression
+    author: AuthorFilter
+    publisher: PublisherFilter
+    traceData: TraceDataFilter
+
+    and: [BookFilter!]
+    or: [BookFilter!]
+    not: BookFilter
+}
+

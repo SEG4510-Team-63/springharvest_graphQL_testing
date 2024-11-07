@@ -1,0 +1,20 @@
+extend type Query {
+    searchPublishers(filter: PublisherFilter = {}, operation: ClauseFilter = {}, paging: PageRequest = {page: 0, size: 20, sortOrders: "name", sortDirection: "D"}): [Publisher!]
+    countPublishers(filter : PublisherFilter = {}, operation: ClauseFilter = {}, fields: [String] = []) : String
+}
+
+type Publisher implements BaseEntity{
+    id: ID!
+    name: String!
+    traceData: TraceData
+}
+
+input PublisherFilter{
+    id: IdExpression
+    name: StringExpression
+    traceData: TraceDataFilter
+
+    and: [PublisherFilter!]
+    or: [PublisherFilter!]
+    not: PublisherFilter
+}
