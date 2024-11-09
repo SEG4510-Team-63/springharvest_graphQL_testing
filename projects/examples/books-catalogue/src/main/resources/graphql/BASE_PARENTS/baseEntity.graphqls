@@ -7,19 +7,3 @@ interface BaseEntity
 
 # The Parent union represents a parent entity which can be an Author, Book, Publisher or Pet
 union  Parent = Author | Book | Publisher | Pet
-
-# The Query type is used to define all the available queries in the system
-type Query {
-
-}
-
-# The Mutation type is used to define all the available mutations in the system
-type Mutation {
-
-}
-
-# The schema is the root GraphQL object type, and it groups all the available operations
-schema {
-    query: Query # The available queries
-    mutation: Mutation # The available mutations
-}

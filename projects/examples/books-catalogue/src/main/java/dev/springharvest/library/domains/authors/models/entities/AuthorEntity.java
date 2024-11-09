@@ -1,10 +1,8 @@
 package dev.springharvest.library.domains.authors.models.entities;
 
+import dev.springharvest.library.domains.pet.models.entities.PetEntity;
 import dev.springharvest.shared.domains.embeddables.traces.traceable.models.entities.AbstractTraceableEntity;
-import jakarta.persistence.AttributeOverride;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 
 import java.time.LocalDate;

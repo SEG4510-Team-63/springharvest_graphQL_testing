@@ -104,7 +104,7 @@ public class JpaSpecificationBuilder {
      * @return a JPA Specification based on the unary operator and value
      */
     private static <T> Specification<T> createUnaryOperatorSpecification(Map<String, Object> value, Class<T> rootClass, String parentPath, List<String> fields) {
-        Specification<T> spec = createSpecification(value, rootClass, parentPath, determineRootOperator(value));
+        Specification<T> spec = createSpecification(value, rootClass, parentPath, determineRootOperator(value), fields);
         return Specification.not(spec);
     }
 

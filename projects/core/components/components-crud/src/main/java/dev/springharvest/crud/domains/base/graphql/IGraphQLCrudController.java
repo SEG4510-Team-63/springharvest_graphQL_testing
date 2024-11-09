@@ -1,6 +1,8 @@
 package dev.springharvest.crud.domains.base.graphql;
 
+import dev.springharvest.shared.constants.Aggregates;
 import dev.springharvest.shared.constants.DataPaging;
+import dev.springharvest.shared.constants.PageData;
 import dev.springharvest.shared.domains.base.models.dtos.BaseDTO;
 import graphql.schema.DataFetchingEnvironment;
 import io.swagger.v3.oas.annotations.Operation;
@@ -20,17 +22,24 @@ import java.util.Map;
  * @param <D> The DTO object for a domain
  * @param <K> The type of the id (primary key) field pertaining to the entity relating to the DTO
  *
+ * @see PageData
+ * @see DataFetchingEnvironment
  * @see BaseDTO
  * @see DataPaging
  * @since 1.0
+ *
+ * @author Gilles Djawa (NeroNemesis)
  */
 public interface IGraphQLCrudController<D extends BaseDTO<K>, K extends Serializable> {
 
     /**
      * Performs a search query on the entity based on the provided filter and paging information.
      *
+     * @throws NoSuchFieldException if the fields do not exist
      * @param filter the filter criteria as a map of field names to values
      * @param paging the paging information
+     * @param environment the GraphQL data fetching environment
+     * @param clause the type of clause to be performed on the query
      * @return a list of DTOs matching the filter criteria
      */
     @Operation(operationId = "search", summary = "Performs any search query on the entity.",
@@ -50,16 +59,24 @@ public interface IGraphQLCrudController<D extends BaseDTO<K>, K extends Serializ
                             required = true),
             },
             responses = {@ApiResponse(responseCode = "200", description = "The queried entities ordered according to the paging or their count.")})
-    List<D> search(@RequestParam(name = "filter") Map<String, Object> filter, @RequestParam(name = "clause") Map<String, Object> clause, @RequestParam(name = "paging") DataPaging paging, @RequestParam(name = "environment") DataFetchingEnvironment environment);
+    PageData<D> search(@RequestParam(name = "filter") Map<String, Object> filter,
+                       @RequestParam(name = "clause") Map<String, Object> clause,
+                       @RequestParam(name = "paging") DataPaging paging,
+                       @RequestParam(name = "environment") DataFetchingEnvironment environment) throws NoSuchFieldException;
 
     /**
-     * Performs a search query on the entity based on the provided filter without paging information.
+     * Performs a complex search query on the entity based on the provided filter, paging information, fields to select and aggregates operations.
      *
-     * @param filter the filter criteria as a map of field names to values
-     * @return a list of DTOs matching the filter criteria
+     * @param filter @description the filter criteria as a map of field names to values
+     * @param clause @description the type of clause to be performed on the query
+     * @param fields @description the fields to select
+     * @param aggregatesFilter @description the filter criteria for the aggregates
+     * @param paging @description the paging information
+     * @return an object (JSON format) containing the search results
+     * @throws NoSuchFieldException if the fields do not exist
      */
-    @Operation(operationId = "search", summary = "Performs any search query on the entity.",
-            description = "Use this API to retrieve entities corresponding to the passed query inside the filter.",
+    @Operation(operationId = "complexSearch", summary = "Performs a complex search query on the entity.",
+            description = "Use this API to retrieve entities corresponding to the passed query inside the filter and ordered according to the requested paging.",
             parameters = {
                     @Parameter(description = "The map containing the query",
                             name = "filter",
@@ -67,13 +84,28 @@ public interface IGraphQLCrudController<D extends BaseDTO<K>, K extends Serializ
                     @Parameter(description = "The map containing the type of clause to be performed on the query",
                             name = "clause",
                             required = true),
-                    @Parameter(description = "The GraphQL data fetching environment that allows us to retrieve what fields where selected to be displayed by the user",
-                            name = "environment",
+                    @Parameter(description = "The fields to select",
+                            name = "fields",
                             required = true),
+                    @Parameter(description = "The object containing the aggregation operations",
+                            name = "aggregatesFilter",
+                            required = true),
+                    @Parameter(description = "The paging request, determining the number of entities that should be returned, their sort orders and their sort direction as well",
+                            name = "paging",
+                            required = true)
             },
-            responses = {@ApiResponse(responseCode = "200", description = "The queried entities.")})
-    List<D> search(@RequestParam(name = "filter") Map<String, Object> filter, @RequestParam(name = "clause") Map<String, Object> clause, @RequestParam(name = "environment") DataFetchingEnvironment environment);
+            responses = {@ApiResponse(responseCode = "200", description = "The queried entities ordered according to the paging or their count.")})
+    Object search(Map<String, Object> filter, Map<String, Object> clause, List<String> fields, Aggregates aggregatesFilter, DataPaging paging) throws NoSuchFieldException;
 
+    /**
+     * Performs a count query on the entity based on the provided filter and paging information.
+     *
+     * @param filter @description the filter criteria as a map of field names to values
+     * @param clause @description the type of clause to be performed on the query
+     * @param fields @description the fields to apply the distinct clause on
+     * @return the count of entities corresponding to the filter criteria
+     * @throws NoSuchFieldException if the fields do not exist
+     */
     @Operation(operationId = "count", summary = "Performs count operations on an entity.",
             description = "Use this API to retrieve entities count corresponding to the passed query inside the filter.",
             parameters = {
@@ -83,10 +115,10 @@ public interface IGraphQLCrudController<D extends BaseDTO<K>, K extends Serializ
                     @Parameter(description = "The map containing the type of clause to be performed on the query",
                             name = "clause",
                             required = true),
-                    @Parameter(description = "The fields to applay the distinct clause on",
+                    @Parameter(description = "The fields to apply the distinct clause on",
                             name = "fields",
                             required = true)
             },
             responses = {@ApiResponse(responseCode = "200", description = "The queried entities count.")})
-    String count(@RequestParam(name = "filter") Map<String, Object> filter, @RequestParam(name = "clause") Map<String, Object> clause, @RequestParam(name = "fields") List<String> fields);
+    long count(@RequestParam(name = "filter") Map<String, Object> filter, @RequestParam(name = "clause") Map<String, Object> clause, @RequestParam(name = "fields") List<String> fields) throws NoSuchFieldException;
 }

@@ -7,6 +7,7 @@ import java.util.*;
 
 import dev.springharvest.library.domains.authors.services.AuthorQueryCrudService;
 import dev.springharvest.shared.constants.DataPaging;
+import dev.springharvest.shared.constants.PageData;
 import dev.springharvest.shared.domains.base.mappers.IBaseModelMapper;
 import graphql.schema.DataFetchingEnvironment;
 import lombok.extern.slf4j.Slf4j;
@@ -25,13 +26,13 @@ public class AuthorGraphQLController extends AbstractGraphQLCrudController<Autho
   }
 
   @QueryMapping
-  public List<AuthorDTO> searchAuthors(@Argument Map<String, Object> filter, @Argument Map<String, Object> operation, @Argument DataPaging paging, DataFetchingEnvironment environment) {
-    return paging != null ? search(filter, operation, paging, environment) : search(filter, operation, environment);
+  public PageData<AuthorDTO> searchAuthors(@Argument Map<String, Object> filter, @Argument Map<String, Object> clause, @Argument DataPaging paging, DataFetchingEnvironment environment) {
+    return search(filter, clause, paging, environment);
   }
 
   @QueryMapping
-  public String countAuthors(@Argument Map<String, Object> filter, @Argument Map<String, Object> operation, @Argument List<String> fields) {
-    return count(filter, operation, fields);
+  public long countAuthors(@Argument Map<String, Object> filter, @Argument Map<String, Object> clause, @Argument List<String> fields) {
+    return count(filter, clause, fields);
   }
 
 

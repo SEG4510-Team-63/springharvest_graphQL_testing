@@ -2,6 +2,5 @@
 input PageRequest{
     page: Int # The page number for pagination
     size: Int # The number of items to return per page
-    sortOrders: String # The field to sort the results by
-    sortDirection: String # The direction to sort the results in
+    sortOrders: [SortOrder] # The field to sort the results by
 }

@@ -5,7 +5,9 @@ import dev.springharvest.library.domains.books.models.dtos.BookDTO;
 import dev.springharvest.library.domains.books.models.entities.BookEntity;
 import java.util.*;
 import dev.springharvest.library.domains.books.services.BookQueryCrudService;
+import dev.springharvest.shared.constants.Aggregates;
 import dev.springharvest.shared.constants.DataPaging;
+import dev.springharvest.shared.constants.PageData;
 import dev.springharvest.shared.domains.base.mappers.IBaseModelMapper;
 import graphql.schema.DataFetchingEnvironment;
 import lombok.extern.slf4j.Slf4j;
@@ -24,12 +26,17 @@ public class BookGraphQLController extends AbstractGraphQLCrudController<BookDTO
   }
 
     @QueryMapping
-    public List<BookDTO> searchBooks(@Argument Map<String, Object> filter, @Argument Map<String, Object> operation, @Argument DataPaging paging, DataFetchingEnvironment environment) {
-        return paging != null ? search(filter, operation, paging, environment) : search(filter, operation, environment);
+    public PageData<BookDTO> searchBooks(@Argument Map<String, Object> filter, @Argument Map<String, Object> clause, @Argument DataPaging paging, DataFetchingEnvironment environment) {
+        return search(filter, clause, paging, environment);
     }
 
     @QueryMapping
-    public String countBooks(@Argument Map<String, Object> filter, @Argument Map<String, Object> operation, @Argument List<String> fields) {
-        return count(filter, operation, fields);
+    public Object complexBooksSearch(@Argument Map<String, Object> filter, @Argument Map<String, Object> clause, @Argument List<String> fields, @Argument DataPaging paging, @Argument Aggregates aggregates, DataFetchingEnvironment environment) {
+        return search(filter, clause, fields, aggregates, paging);
+    }
+
+    @QueryMapping
+    public long countBooks(@Argument Map<String, Object> filter, @Argument Map<String, Object> clause, @Argument List<String> fields) {
+        return count(filter, clause, fields);
     }
 }
