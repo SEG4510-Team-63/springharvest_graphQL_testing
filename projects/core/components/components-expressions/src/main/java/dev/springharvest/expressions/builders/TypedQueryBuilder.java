@@ -956,7 +956,7 @@ public class TypedQueryBuilder {
     }
 
 
-    // For Abstract Entity Mapper
+    // For Generic Entity Mapper
     public <T> List<T> executeAndMap(EntityManager em, String queryString, Class<T> entityClass) {
         TypedQuery<Tuple> query = em.createQuery(queryString, Tuple.class);
         List<Tuple> results = query.getResultList();

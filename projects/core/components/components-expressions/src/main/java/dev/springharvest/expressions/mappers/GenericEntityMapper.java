@@ -16,6 +16,10 @@ public class GenericEntityMapper<T> implements EntityMapper<T> {
                 for (Field field : entityClass.getDeclaredFields()) {
                     field.setAccessible(true);
                     Object value = tuple.get(field.getName(), field.getType());
+
+                    //Logging for each field
+                    System.out.println("Mapping field: " + field.getName() + ", Value: " + value);
+
                     if (value != null || field.getType().isPrimitive()) {
                         field.set(entity, value);
                     }
@@ -25,6 +29,10 @@ public class GenericEntityMapper<T> implements EntityMapper<T> {
                 for (Field field : entityClass.getDeclaredFields()) {
                     field.setAccessible(true);
                     Object value = map.get(field.getName());
+
+                    //Logging for each field
+                    System.out.println("Mapping field: " + field.getName() + ", Value: " + value);
+
                     if (value != null || field.getType().isPrimitive()) {
                         field.set(entity, value);
                     }
@@ -54,6 +62,9 @@ public class GenericEntityMapper<T> implements EntityMapper<T> {
             } else if (rawObject instanceof Map) {
                 value = ((Map<?, ?>) rawObject).get(field.getName());
             }
+
+            //Logging for each field
+            System.out.println("Mapping inherited field: " + field.getName() + ", Value: " + value);
 
             if (value != null || field.getType().isPrimitive()) {
                 field.set(entity, value);
