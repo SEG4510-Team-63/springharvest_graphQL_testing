@@ -2,6 +2,7 @@ package dev.springharvest.expressions.builders;
 
 import dev.springharvest.expressions.helpers.Operation;
 import dev.springharvest.expressions.helpers.Operator;
+import dev.springharvest.expressions.mappers.GenericEntityMapper;
 import dev.springharvest.shared.constants.Aggregates;
 import dev.springharvest.shared.constants.DataPaging;
 import dev.springharvest.shared.constants.Sort;
@@ -19,6 +20,7 @@ import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.util.*;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
  * This class is responsible for helping build Typed queries from a filter map.
@@ -951,5 +953,17 @@ public class TypedQueryBuilder {
         }
 
         return result;
+    }
+
+
+    // For Abstract Entity Mapper
+    public <T> List<T> executeAndMap(EntityManager em, String queryString, Class<T> entityClass) {
+        TypedQuery<Tuple> query = em.createQuery(queryString, Tuple.class);
+        List<Tuple> results = query.getResultList();
+
+        GenericEntityMapper<T> mapper = new GenericEntityMapper<>();
+        return results.stream()
+                .map(result -> mapper.mapToEntity(result, entityClass))
+                .collect(Collectors.toList());
     }
 }
