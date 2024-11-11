@@ -48,10 +48,15 @@ class EntityMapperTest {
     void testMapToBookEntityFromTuple() {
         Tuple tuple = Mockito.mock(Tuple.class);
         UUID bookId = UUID.randomUUID();
-        String title = "Test Book Title";
+        String title = "Le Continent";
         String genre = "Fiction";
         AuthorEntity author = new AuthorEntity();
+        author.setName("Gilles Djawa");
+        PetEntity pet = new PetEntity();
+        pet.setName("Poopy");
+        author.setPet(pet);
         PublisherEntity publisher = new PublisherEntity();
+        publisher.setName("Yaounde Publishing");
 
         when(tuple.get("id", UUID.class)).thenReturn(bookId);
         when(tuple.get("title", String.class)).thenReturn(title);
