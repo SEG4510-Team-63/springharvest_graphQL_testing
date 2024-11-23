@@ -1,6 +1,6 @@
 extend type Query
 {
-    searchPets(filter: PetFilter = {}, clause: ClauseFilter = {}, paging: PageRequest = {page: 0, size: 20, sortOrders: []}) : [Pet!]
+    searchPets(filter: PetFilter = {}, clause: ClauseFilter = {}, paging: PageRequest = {page: 0, size: 20, sortOrders: []}) : PetPageData
     countPets(filter : PetFilter = {}, clause: ClauseFilter = {}, fields: PetField) : Long
 }
 
@@ -9,6 +9,15 @@ type Pet implements BaseEntity
     id: ID!
     name: String!
     traceData: TraceData
+}
+
+type PetPageData implements PageData{
+    currentPage : Int
+    pageSize : Int
+    total : Long
+    totalPages : Int
+    currentPageCount : Int
+    data : [Pet!]
 }
 
 input PetFilter{

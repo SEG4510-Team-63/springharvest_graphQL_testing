@@ -1,5 +1,5 @@
 extend type Query {
-    searchPublishers(filter: PublisherFilter = {}, clause: ClauseFilter = {}, paging: PageRequest = {page: 0, size: 20, sortOrders: []}): [Publisher!]
+    searchPublishers(filter: PublisherFilter = {}, clause: ClauseFilter = {}, paging: PageRequest = {page: 0, size: 20, sortOrders: []}): PublisherPageData
     countPublishers(filter : PublisherFilter = {}, clause: ClauseFilter = {}, fields: PublisherField) : Long
 }
 
@@ -7,6 +7,15 @@ type Publisher implements BaseEntity{
     id: ID!
     name: String!
     traceData: TraceData
+}
+
+type PublisherPageData implements PageData{
+    currentPage : Int
+    pageSize : Int
+    total : Long
+    totalPages : Int
+    currentPageCount : Int
+    data : [Publisher!]
 }
 
 input PublisherFilter{

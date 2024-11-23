@@ -17,15 +17,15 @@ import org.springframework.graphql.data.method.annotation.QueryMapping;
 import org.springframework.stereotype.Controller;
 
 @Controller
-public class PublisherGraphQLController extends AbstractGraphQLCrudController<PublisherDTO, PublisherEntity, UUID> {
+public class PublisherGraphQLController extends AbstractGraphQLCrudController<PublisherEntity, UUID> {
 
   @Autowired
-  protected PublisherGraphQLController(PetQueryCrudService baseService, IBaseModelMapper<PublisherDTO, PublisherEntity, UUID> modelMapper) {
-      super(modelMapper, baseService, PublisherEntity.class);
+  protected PublisherGraphQLController(PetQueryCrudService baseService) {
+      super(baseService, PublisherEntity.class, UUID.class);
   }
 
     @QueryMapping
-    public PageData<PublisherDTO> searchPublishers(@Argument Map<String, Object> filter, @Argument Map<String, Object> clause, @Argument DataPaging paging, DataFetchingEnvironment environment) {
+    public PageData<PublisherEntity> searchPublishers(@Argument Map<String, Object> filter, @Argument Map<String, Object> clause, @Argument DataPaging paging, DataFetchingEnvironment environment) {
       return search(filter, clause, paging, environment);
     }
 

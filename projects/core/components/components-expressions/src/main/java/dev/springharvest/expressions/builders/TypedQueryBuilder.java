@@ -2,17 +2,22 @@ package dev.springharvest.expressions.builders;
 
 import dev.springharvest.expressions.helpers.Operation;
 import dev.springharvest.expressions.helpers.Operator;
-import dev.springharvest.shared.constants.Aggregates;
-import dev.springharvest.shared.constants.DataPaging;
-import dev.springharvest.shared.constants.Sort;
-import dev.springharvest.shared.constants.SortDirection;
+import dev.springharvest.expressions.helpers.PathObject;
+import dev.springharvest.expressions.mappers.GenericEntityMapper;
+import dev.springharvest.shared.constants.*;
 import jakarta.persistence.*;
+import jakarta.persistence.criteria.From;
+import jakarta.persistence.criteria.Join;
+import jakarta.persistence.criteria.JoinType;
 import jakarta.persistence.criteria.*;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.io.Serializable;
 import java.lang.reflect.Field;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
@@ -55,10 +60,16 @@ public class TypedQueryBuilder {
     private EntityManagerFactory entityManagerFactory;
 
     /**
+     * A map containing joins to be applied to the query.
+     */
+    private static Map<String, Join<?, ?>> joinsMap;
+
+    /**
      * Parses a filter expression and creates a typed query for querying entities.
      *
      * @param operation The operation to be performed (e.g., SEARCH, COUNT).
      * @param rootClass The class of the root entity.
+     * @param keyClass The class of the key entity.
      * @param filterMap A map containing filter criteria.
      * @param clauseMap A map containing additional clauses.
      * @param fields A list of fields to be included in the query.
@@ -68,11 +79,13 @@ public class TypedQueryBuilder {
      * @return The result of the query, which can be a list of entities or a count.
      * @throws RuntimeException If a field specified in the fields list is not found in the root class.
      */
-    public <T> Object parseFilterExpression(Operation operation,
+    public <T, K> Object parseFilterExpression(Operation operation,
                                             Class<T> rootClass,
+                                            Class<K> keyClass,
                                             Map<String, Object> filterMap,
                                             Map<String, Object> clauseMap,
                                             List<String> fields,
+                                            Map<String, JoinType> joins,
                                             Aggregates aggregatesFilter,
                                             DataPaging paging) {
 
@@ -80,27 +93,72 @@ public class TypedQueryBuilder {
 
         try {
             try {
-                fields = CleanFields(rootClass, fields);
+                fields = CleanFields(rootClass, keyClass, fields);
+                System.out.println("Fields : " + fields);
             } catch (NoSuchFieldException e) {
                 throw new RuntimeException("Field not found.\n For each field make sure the field's name exists in the class corresponding to your schema definition and follows this format 'Schema type name' + '.' + 'fieldName.\n e.g: 'Book.title', 'Book.author.pet.name'.");
             }
             CriteriaBuilder criteriaBuilder = entityManager.getCriteriaBuilder();
             CriteriaQuery<Tuple> criteriaQuery = criteriaBuilder.createQuery(Tuple.class);
             Root<T> root = criteriaQuery.from(rootClass);
+            applyJoins(root, joins);
 
             if (filterMap == null || filterMap.isEmpty()) {
-                return applyOperations(criteriaBuilder, criteriaQuery, entityManager, clauseMap, root, fields, operation, null, rootClass, null, aggregatesFilter, paging);
+                return applyOperations(criteriaBuilder, criteriaQuery, entityManager, clauseMap, root, fields, joins, operation, null, rootClass, keyClass, null, aggregatesFilter, paging);
             }
 
             String rootOperator = determineRootOperator(filterMap);
-            Predicate predicate = createTypedQuery(filterMap, criteriaBuilder, rootClass, root, "", rootOperator, fields, criteriaQuery);
+            Predicate predicate = createTypedQuery(filterMap, criteriaBuilder, rootClass, keyClass, root, "", rootOperator, fields, criteriaQuery);
             criteriaQuery.where(predicate);
 
-            return applyOperations(criteriaBuilder, criteriaQuery, entityManager, clauseMap, root, fields, operation, filterMap, rootClass, rootOperator, aggregatesFilter, paging);
+            return applyOperations(criteriaBuilder, criteriaQuery, entityManager, clauseMap, root, fields, joins, operation, filterMap, rootClass, keyClass, rootOperator, aggregatesFilter, paging);
 
         } finally {
             if (entityManager != null && entityManager.isOpen()) {
                 entityManager.close();
+            }
+        }
+    }
+
+    /**
+     * Applies joins to the root entity based on the provided map of join paths and join types.
+     * <p>
+     * Expects a map of join paths and join types.
+     * The join path is a string representing the path to the field to be joined. The join type is the type of join to be applied.
+     * e.g., "data.Author.pet" -> JoinType.INNER"
+     * @param root The root entity in the query.
+     * @param joins A map containing join paths as keys and join types as values.
+     */
+    private void applyJoins(Root<?> root, Map<String, JoinType> joins) {
+        joinsMap = new HashMap<>();
+
+        if (joins == null) {
+            return;
+        }
+        // Apply joins based on the provided map
+        for (Map.Entry<String, JoinType> entry : joins.entrySet()) {
+            String path = entry.getKey();
+            JoinType joinType = entry.getValue();
+
+            String[] pathParts = path.split("\\.");
+            From<?, ?> currentFrom = root;
+            StringBuilder currentPath = new StringBuilder(pathParts[1]); // Start from root (e.g., "Book")
+
+            for (int i = 1; i < pathParts.length; i++) {
+                // Build the current path incrementally
+                if (i > 1) {
+                    currentPath.append(".").append(pathParts[i]);
+                }
+                String currentPathStr = currentPath.toString();
+                // Check if a join for this path already exists
+                if (joinsMap.containsKey(currentPathStr)) {
+                    currentFrom = joinsMap.get(currentPathStr);
+                } else {
+                    // Create a new join and add it to the map
+                    Join<?, ?> newJoin = ((From<?, ?>) currentFrom).join(pathParts[i], joinType);
+                    joinsMap.put(currentPathStr, newJoin);
+                    currentFrom = newJoin;
+                }
             }
         }
     }
@@ -124,7 +182,7 @@ public class TypedQueryBuilder {
      * @return The result of the query, which can be a list of entities or a count.
      * @throws IllegalArgumentException If an unsupported operation is specified.
      */
-    private <T> Object applyOperations(CriteriaBuilder criteriaBuilder, CriteriaQuery<Tuple> criteriaQuery, EntityManager entityManager, Map<String, Object> operationMap, Root<T> root, List<String> fields, Operation operation, Map<String, Object> filterMap, Class<T> rootClass, String rootOperator, Aggregates aggregates, DataPaging paging)
+    private <T, K> Object applyOperations(CriteriaBuilder criteriaBuilder, CriteriaQuery<Tuple> criteriaQuery, EntityManager entityManager, Map<String, Object> operationMap, Root<T> root, List<String> fields, Map<String, JoinType> joins, Operation operation, Map<String, Object> filterMap, Class<T> rootClass, Class<K> keyClass, String rootOperator, Aggregates aggregates, DataPaging paging)
     {
         boolean distinct = operationMap != null && Boolean.TRUE.equals(operationMap.get("distinct"));
         long total;
@@ -136,14 +194,22 @@ public class TypedQueryBuilder {
                     criteriaQuery.distinct(true);
                 }
                 TypedQuery<Tuple> query = entityManager.createQuery(criteriaQuery);
-                total = handleCountOperation(criteriaBuilder, criteriaQuery, entityManager, filterMap, rootClass, fields, rootOperator, distinct, root, true, aggregates);
+                total = handleCountOperation(criteriaBuilder, criteriaQuery, entityManager, filterMap, rootClass, keyClass, fields, joins, rootOperator, distinct, root, true, aggregates);
                 query.setFirstResult((paging.page() - 1) * paging.size());
                 query.setMaxResults(paging.size());
                 int totalPages = (int) Math.ceil((double) total / paging.size());
                 //Need the mapper here
                 List<Tuple> resultsList = query.getResultList();
+                System.out.println("ResultsList: " + resultsList);
                 int currentPageCount = resultsList.size();
-                List<Map<String, Object>> dataMap = mapTuplesToMap(resultsList);
+                GenericEntityMapper<T> mapper = new GenericEntityMapper<>();
+                if (aggregates == null) // If no aggregates are specified, return a list of entities
+                {
+                    PageData<T> pageData = new PageData<>(mapper.mapTuplesToEntity(resultsList, rootClass), paging.page(), paging.size(), total, totalPages, currentPageCount);
+                    System.out.println("PageData: " + pageData);
+                    return pageData;
+                }
+                List<Map<String, Object>> dataMap = mapper.mapTuplesToMap(resultsList);
                 Map<String, Object> pagingMap = new HashMap<>();
                 Map<String, Object> subPagingMap = new HashMap<>();
                 subPagingMap.put("page", paging.page());
@@ -157,7 +223,7 @@ public class TypedQueryBuilder {
                 return dataMap;
 
             case COUNT:
-                return handleCountOperation(criteriaBuilder, criteriaQuery, entityManager, filterMap, rootClass, fields, rootOperator, distinct, root, false, null);
+                return handleCountOperation(criteriaBuilder, criteriaQuery, entityManager, filterMap, rootClass, keyClass, fields, joins, rootOperator, distinct, root, false, null);
 
             default:
                 throw new IllegalArgumentException("Unsupported operation");
@@ -181,31 +247,31 @@ public class TypedQueryBuilder {
      * @param aggregates Aggregates to be applied to the query.
      * @return The result of the count operation.
      */
-    private <T> long handleCountOperation(CriteriaBuilder criteriaBuilder, CriteriaQuery<Tuple> criteriaQuery, EntityManager entityManager, Map<String, Object> filterMap, Class<T> rootClass, List<String> fields, String rootOperator, boolean distinct, Root<T> root, boolean isSubQuery, Aggregates aggregates) {
+    private <T, K> long handleCountOperation(CriteriaBuilder criteriaBuilder, CriteriaQuery<Tuple> criteriaQuery, EntityManager entityManager, Map<String, Object> filterMap, Class<T> rootClass, Class<K> keyClass, List<String> fields, Map<String, JoinType> joins, String rootOperator, boolean distinct, Root<T> root, boolean isSubQuery, Aggregates aggregates) {
         CriteriaQuery<Long> countQuery = criteriaBuilder.createQuery(Long.class);
         Root<?> countRoot = countQuery.from(root.getJavaType());
-
-        Predicate filterPredicate = filterMap != null ? createTypedQuery(filterMap, criteriaBuilder, rootClass, (Root) countRoot, "", rootOperator, fields, criteriaQuery) : null;
-        if (filterPredicate != null && !isSubQuery) {
-            countQuery.where(filterPredicate);
-        }
 
         if (isSubQuery)
         {
             List<Selection<?>> selections = new ArrayList<>();
             Subquery<Tuple> subquery = countQuery.subquery(Tuple.class);
             Root<?> subRoot = subquery.from(countRoot.getJavaType());
+            applyJoins(subRoot, joins);
             List<Path<?>> groupByPaths = new ArrayList<>();
+
             for (String field : fields) {
-                Object [] pathAndAlias = getPathFromField(subRoot, field);
-                Path<?> path = (Path<?>) pathAndAlias[0];
+                PathObject pathAndAlias = getPathFromField(subRoot, field);
+                Path<?> path = pathAndAlias.path();
                 selections.add(path);
             }
+            Predicate filterPredicate = filterMap != null ? createTypedQuery(filterMap, criteriaBuilder, rootClass, keyClass, (Root) subRoot, "", rootOperator, fields, criteriaQuery) : null;
+            if (filterPredicate != null) {
+                countQuery.where(filterPredicate);
+            }
+            joinsMap.clear();
             if (aggregates != null) {
-                System.out.println("Aggregates in sub: " + aggregates);
                 addAggregateSelections(criteriaBuilder, subRoot, aggregates, selections);
                 addGroupByPaths(subRoot, aggregates, groupByPaths);
-                System.out.println("Group by paths: " + groupByPaths);
                 if (!groupByPaths.isEmpty()) {
                     subquery.groupBy(groupByPaths.toArray(new Path[0]));
                 }
@@ -216,29 +282,36 @@ public class TypedQueryBuilder {
             countQuery.select(criteriaBuilder.count(countRoot));
             return entityManager.createQuery(countQuery).getSingleResult();
         }
+        else {
+            /* PLEASE READ
+             * The following code is a workaround for the limitation of the Count and CountDistinct methods in CriteriaBuilder.
+             * The Count and CountDistinct methods only support selecting 1 field.
+             * Counting multiple fields is supported through Concatenation in Postgres and MySQL but not in T-SQL. Not sure about H2.
+             * So I think it is preferable to avoid using Concatenation for now.
+             * The workaround is to select the fields to be counted and then add the count to the result list.
+             * The count is then extracted from the result list.
+             */
 
-        /* PLEASE READ
-         * The following code is a workaround for the limitation of the Count and CountDistinct methods in CriteriaBuilder.
-         * The Count and CountDistinct methods only support selecting 1 field.
-         * Counting multiple fields is supported through Concatenation in Postgres and MySQL but not in T-SQL. Not sure about H2.
-         * So I think it is preferable to avoid using Concatenation for now.
-         * The workaround is to select the fields to be counted and then add the count to the result list.
-         * The count is then extracted from the result list.
-         */
-        if (distinct) {
-            if (fields == null || fields.isEmpty()) {
-                countQuery.select(criteriaBuilder.countDistinct(countRoot));
-                return entityManager.createQuery(countQuery).getSingleResult();
+            Predicate filterPredicate = filterMap != null ? createTypedQuery(filterMap, criteriaBuilder, rootClass, keyClass, (Root) countRoot, "", rootOperator, fields, criteriaQuery) : null;
+            if (filterPredicate != null) {
+                countQuery.where(filterPredicate);
+            }
+
+            if (distinct) {
+                if (fields == null || fields.isEmpty()) {
+                    countQuery.select(criteriaBuilder.countDistinct(countRoot));
+                    return entityManager.createQuery(countQuery).getSingleResult();
+                } else {
+                    countQuery.select(criteriaBuilder.countDistinct(getPathFromField(countRoot, fields.getFirst()).path()));
+                    return entityManager.createQuery(countQuery).getSingleResult();
+                }
             } else {
-                countQuery.select(criteriaBuilder.countDistinct((Path<?>) getPathFromField(countRoot, fields.getFirst())[0]));
+                if (fields == null || fields.isEmpty())
+                    countQuery.select(criteriaBuilder.count(countRoot));
+                else
+                    countQuery.select(criteriaBuilder.count(getPathFromField(countRoot, fields.getFirst()).path()));
                 return entityManager.createQuery(countQuery).getSingleResult();
             }
-        } else {
-            if (fields == null || fields.isEmpty())
-                countQuery.select(criteriaBuilder.count(countRoot));
-            else
-                countQuery.select(criteriaBuilder.count((Path<?>) getPathFromField(countRoot, fields.getFirst())[0]));
-            return entityManager.createQuery(countQuery).getSingleResult();
         }
     }
 
@@ -257,7 +330,7 @@ public class TypedQueryBuilder {
      * @return A combined predicate representing the filter criteria.
      */
     @SuppressWarnings("unchecked") // Made sure these casts are safe
-    private static <T> Predicate createTypedQuery(Map<String, Object> filterMap, CriteriaBuilder builder, Class<T> rootClass, Root<T> root, String parentPath, String rootOperator, List<String> fields, CriteriaQuery<?> query) {
+    private static <T, K> Predicate createTypedQuery(Map<String, Object> filterMap, CriteriaBuilder builder, Class<T> rootClass, Class<K> keyClass, Root<T> root, String parentPath, String rootOperator, List<String> fields, CriteriaQuery<?> query) {
         List<Predicate> predicates = new ArrayList<>();
 
         for (Map.Entry<String, Object> entry : filterMap.entrySet()) {
@@ -266,19 +339,19 @@ public class TypedQueryBuilder {
 
             if (isLogicalOperator(key)) {
                 if (Operator.getOperator(key).getKind() != Operator.Kind.UNARY) {
-                    predicates.add(createLogicalOperatorTypedQuery(key, (List<Map<String, Object>>) value, builder, rootClass, root, parentPath, fields, query));
+                    predicates.add(createLogicalOperatorTypedQuery(key, (List<Map<String, Object>>) value, builder, rootClass, keyClass, root, parentPath, fields, query));
                 } else {
-                    predicates.add(createUnaryOperatorTypedQuery((Map<String, Object>) value, builder, rootClass, root, parentPath, fields, query));
+                    predicates.add(createUnaryOperatorTypedQuery((Map<String, Object>) value, builder, rootClass, keyClass, root, parentPath, fields, query));
                 }
             } else {
                 try {
-                    if (isComplexField(rootClass, key)) {
+                    if (isComplexField(rootClass, keyClass, key)) {
                         String newPath = parentPath.isEmpty() ? key : parentPath + "." + key;
                         Class<?> nestedClass = getFieldType(rootClass, key);
                         String subOperator = determineRootOperator((Map<String, Object>) value);
-                        predicates.add(createTypedQuery((Map<String, Object>) value, builder, (Class) nestedClass, root, newPath, subOperator, fields, query));
+                        predicates.add(createTypedQuery((Map<String, Object>) value, builder, (Class) nestedClass, keyClass, root, newPath, subOperator, fields, query));
                     } else {
-                        predicates.add(createSimpleFieldTypedQuery(key, value, parentPath, rootClass, builder, root, fields));
+                        predicates.add(createSimpleFieldTypedQuery(key, value, parentPath, rootClass, builder, root));
                     }
                 } catch (NoSuchFieldException e) {
                     throw new RuntimeException(e);
@@ -303,12 +376,12 @@ public class TypedQueryBuilder {
      * @param query The criteria query to which predicates will be applied.
      * @return A combined predicate representing the logical operation.
      */
-    private static <T> Predicate createLogicalOperatorTypedQuery(String operator, List<Map<String, Object>> value, CriteriaBuilder builder, Class<T> rootClass, Root<T> root, String parentPath, List<String> fields, CriteriaQuery<?> query) {
+    private static <T,K> Predicate createLogicalOperatorTypedQuery(String operator, List<Map<String, Object>> value, CriteriaBuilder builder, Class<T> rootClass, Class<K> keyClass, Root<T> root, String parentPath, List<String> fields, CriteriaQuery<?> query) {
         List<Predicate> subPredicates = new ArrayList<>();
 
         for (Map<String, Object> subFilter : value) {
             String subOperator = determineRootOperator(subFilter);
-            subPredicates.add(createTypedQuery(subFilter, builder, rootClass, root, parentPath, subOperator, fields, query));
+            subPredicates.add(createTypedQuery(subFilter, builder, rootClass, keyClass, root, parentPath, subOperator, fields, query));
         }
 
         return combinePredicates(subPredicates, builder, operator, query, root);
@@ -327,8 +400,8 @@ public class TypedQueryBuilder {
      * @param query The criteria query to which predicates will be applied.
      * @return A predicate representing the NOT operation.
      */
-    private static <T> Predicate createUnaryOperatorTypedQuery(Map<String, Object> value, CriteriaBuilder builder, Class<T> rootClass, Root<T> root, String parentPath, List<String> fields, CriteriaQuery<?> query) {
-        Predicate predicate = createTypedQuery(value, builder, rootClass, root, parentPath, determineRootOperator(value), fields, query);
+    private static <T, K> Predicate createUnaryOperatorTypedQuery(Map<String, Object> value, CriteriaBuilder builder, Class<T> rootClass, Class<K> keyClass, Root<T> root, String parentPath, List<String> fields, CriteriaQuery<?> query) {
+        Predicate predicate = createTypedQuery(value, builder, rootClass, keyClass, root, parentPath, determineRootOperator(value), fields, query);
         return builder.not(predicate);
     }
 
@@ -342,10 +415,9 @@ public class TypedQueryBuilder {
      * @param rootClass The class of the root entity.
      * @param builder The criteria builder used to construct the query.
      * @param root The root entity in the query.
-     * @param fields A list of fields to be included in the query.
      * @return A predicate representing the filter criteria for the simple field.
      */
-    private static <T> Predicate createSimpleFieldTypedQuery(String key, Object value, String parentPath, Class<T> rootClass, CriteriaBuilder builder, Root<T> root, List<String> fields) {
+    private static <T> Predicate createSimpleFieldTypedQuery(String key, Object value, String parentPath, Class<T> rootClass, CriteriaBuilder builder, Root<T> root) {
         Path<?> path = getPath(root, parentPath, key, rootClass);
         return createPredicate(builder, path, value, getFieldType(rootClass, key));
     }
@@ -365,9 +437,9 @@ public class TypedQueryBuilder {
         List<Path<?>> groupByPaths = new ArrayList<>();
 
         for (String field : fields) {
-            Object[] pathAndAlias = getPathFromField(root, field);
-            Path<?> path = (Path<?>) pathAndAlias[0];
-            String alias = (String) pathAndAlias[1];
+            PathObject pathAndAlias = getPathFromField(root, field);
+            Path<?> path = pathAndAlias.path();
+            String alias = pathAndAlias.alias();
             selections.add(path.alias(alias));
         }
 
@@ -385,6 +457,7 @@ public class TypedQueryBuilder {
         }
 
         applySorting(builder, query, root, paging);
+        joinsMap.clear(); // Clear the joins map to ensure that joins are not reused across queries or applied multiple times
     }
 
     /**
@@ -399,8 +472,8 @@ public class TypedQueryBuilder {
         if (paging.sortOrders() != null && !paging.sortOrders().isEmpty()) {
             List<Order> orders = new ArrayList<>();
             for (Sort sortOrder : paging.sortOrders()) {
-                Object[] pathAndAlias = getPathFromField(root, sortOrder.field());
-                Path<?> path = (Path<?>) pathAndAlias[0];
+                PathObject pathAndAlias = getPathFromField(root, sortOrder.field());
+                Path<?> path = pathAndAlias.path();
                 orders.add(sortOrder.sortDirection() == SortDirection.ASC ? builder.asc(path) : builder.desc(path));
             }
             query.orderBy(orders);
@@ -434,9 +507,9 @@ public class TypedQueryBuilder {
     private static void addAggregateSelection(CriteriaBuilder builder, Root<?> root, List<String> fields, List<Selection<?>> selections, String prefix, Function<Expression<Number>, Expression<?>> aggregateFunction) {
         if (fields != null) {
             for (String field : fields) {
-                Object[] pathAndAlias = getPathFromField(root, field);
-                Path<?> path = (Path<?>) pathAndAlias[0];
-                String alias = (String) pathAndAlias[1];
+                PathObject pathAndAlias = getPathFromField(root, field);
+                Path<?> path = pathAndAlias.path();
+                String alias = pathAndAlias.alias();
                 selections.add(aggregateFunction.apply((Expression<Number>) path).alias(prefix + alias));
             }
         }
@@ -453,9 +526,9 @@ public class TypedQueryBuilder {
     private static void addCountSelections(CriteriaBuilder builder, Root<?> root, List<String> fields, List<Selection<?>> selections) {
         if (fields != null) {
             for (String field : fields) {
-                Object[] pathAndAlias = getPathFromField(root, field);
-                Path<?> path = (Path<?>) pathAndAlias[0];
-                String alias = (String) pathAndAlias[1];
+                PathObject pathAndAlias = getPathFromField(root, field);
+                Path<?> path = pathAndAlias.path();
+                String alias = pathAndAlias.alias();
                 selections.add(builder.count(path).alias("count_" + alias));
             }
         }
@@ -471,8 +544,8 @@ public class TypedQueryBuilder {
     private static void addGroupByPaths(Root<?> root, Aggregates aggregates, List<Path<?>> groupByPaths) {
         if (aggregates != null && aggregates.groupBy() != null) {
             for (String field : aggregates.groupBy()) {
-                Object[] pathAndAlias = getPathFromField(root, field);
-                Path<?> path = (Path<?>) pathAndAlias[0];
+                PathObject pathAndAlias = getPathFromField(root, field);
+                Path<?> path = pathAndAlias.path();
                 groupByPaths.add(path);
             }
         }
@@ -485,45 +558,74 @@ public class TypedQueryBuilder {
      * @param field The field for which the path and alias are to be retrieved.
      * @return An array containing the path and alias. The first element is the path, and the second element is the alias.
      */
-    private static Object[] getPathFromField(Root<?> root, String field) {
-        String[] pathParts = field.split("\\.");
-        Path<?> path = root;
-        StringBuilder alias = new StringBuilder();
+    private static PathObject getPathFromField(Root<?> root, String field) {
+        String[] pathParts = field.split("\\."); // Split the field into segments
+        Path<?> currentPath = root; // Start from the root
+        StringBuilder joinAlias = new StringBuilder(); // To track alias for joins
 
-        for (int i = 1; i < pathParts.length; i++) {
-            path = path.get(pathParts[i]);
-            alias.append((!alias.isEmpty()) ? "." + pathParts[i] : pathParts[i]);
-        }
+        if (!joinsMap.isEmpty()) {
+            for (int i = 1; i < pathParts.length; i++) {
+                String part = pathParts[i];
 
-        return new Object [] { path, alias.toString() };
-    }
+                // Construct the current alias for the join (e.g., "Book.author")
+                if (!joinAlias.isEmpty()) {
+                    joinAlias.append(".");
+                }
+                joinAlias.append(part);
 
-    /**
-     * Finds the primary key field of the specified entity class.
-     *
-     * @param entityClass The class of the entity for which the primary key field is to be found.
-     * @return An Optional containing the name of the primary key field, or an empty Optional if no primary key field is found.
-     */
-    public static Optional<String> findPrimaryKeyField(Class<?> entityClass) {
-        // Inspect superclass for @Id annotated field
-        Class<?> currentClass = entityClass;
-        while (currentClass != null) {
-            for (Field field : currentClass.getDeclaredFields()) {
-                if (field.isAnnotationPresent(Id.class)) {
-                    // Check for AttributeOverride in subclass
-                    AttributeOverride[] overrides = entityClass.getAnnotationsByType(AttributeOverride.class);
-                    for (AttributeOverride override : overrides) {
-                        if (override.name().equals(field.getName())) {
-                            return Optional.of(override.column().name());
-                        }
+                if (i < pathParts.length - 1) {
+                    // Look for the join in the map (non-leaf nodes in the path)
+                    if (joinsMap.containsKey(joinAlias.toString())) {
+                        currentPath = joinsMap.get(joinAlias.toString());
+                    } else {
+                        currentPath = currentPath.get(part);
                     }
-                    return Optional.of(field.getName());
+                } else {
+                    // Handle the leaf node (field, not a join)
+                    currentPath = currentPath.get(part);
                 }
             }
-            currentClass = currentClass.getSuperclass();
         }
-        return Optional.empty();
+        else {
+            StringBuilder alias = new StringBuilder();
+
+            for (int i = 1; i < pathParts.length; i++) {
+                currentPath = currentPath.get(pathParts[i]);
+                alias.append((!alias.isEmpty()) ? "." + pathParts[i] : pathParts[i]);
+            }
+
+            return new PathObject(currentPath, alias.toString());
+        }
+
+        return new PathObject(currentPath, joinAlias.toString());
     }
+
+//    /**
+//     * Finds the primary key field of the specified entity class.
+//     *
+//     * @param entityClass The class of the entity for which the primary key field is to be found.
+//     * @return An Optional containing the name of the primary key field, or an empty Optional if no primary key field is found.
+//     */
+//    public static Optional<String> findPrimaryKeyField(Class<?> entityClass) {
+//        // Inspect superclass for @Id annotated field
+//        Class<?> currentClass = entityClass;
+//        while (currentClass != null) {
+//            for (Field field : currentClass.getDeclaredFields()) {
+//                if (field.isAnnotationPresent(Id.class)) {
+//                    // Check for AttributeOverride in subclass
+//                    AttributeOverride[] overrides = entityClass.getAnnotationsByType(AttributeOverride.class);
+//                    for (AttributeOverride override : overrides) {
+//                        if (override.name().equals(field.getName())) {
+//                            return Optional.of(override.column().name());
+//                        }
+//                    }
+//                    return Optional.of(field.getName());
+//                }
+//            }
+//            currentClass = currentClass.getSuperclass();
+//        }
+//        return Optional.empty();
+//    }
 
     /**
      * Creates a predicate based on the provided value and field type.
@@ -633,15 +735,47 @@ public class TypedQueryBuilder {
      * @return The path to the specified field in the entity.
      */
     private static Path<?> getPath(From<?, ?> root, String parentPath, String key, Class<?> rootClass) {
+        String fieldName = getActualFieldName(rootClass, key);
         if (parentPath.isEmpty()) {
             return root.get(getActualFieldName(rootClass, key));
-        } else {
-            String[] paths = parentPath.split("\\.");
-            Path<?> path = root;
-            for (String p : paths) {
-                path = path.get(p);
+        }
+        else {
+            if (joinsMap != null && !joinsMap.isEmpty()) {
+                String fieldPath = parentPath + "." + fieldName;
+                //String rootName = joinsMap.keySet().stream().toList().getFirst().split("\\.")[0];
+                String[] paths = fieldPath.split("\\.");
+                StringBuilder joinAlias = new StringBuilder();
+//                if (!Objects.equals(rootName, ""))
+//                    joinAlias.append(rootName);
+                Path<?> path = root;
+
+                for (int i = 0; i < paths.length; i++) {
+                    String p = paths[i];
+                    if (!joinAlias.isEmpty())
+                        joinAlias.append(".");
+                    joinAlias.append(p);
+
+                    if (i < paths.length - 1) {
+                        // Check if a join already exists for this alias
+                        if (joinsMap.containsKey(joinAlias.toString())) {
+                            path = joinsMap.get(joinAlias.toString());
+                        } else {
+                            // Traverse dynamically (shouldn't happen if joins are pre-handled)
+                            path = path.get(p);
+                        }
+                    }
+                }
+
+                return path.get(fieldName);
             }
-            return path.get(getActualFieldName(rootClass, key));
+            else {
+                String[] paths = parentPath.split("\\.");
+                Path<?> path = root;
+                for (String p : paths) {
+                    path = path.get(p);
+                }
+                return path.get(fieldName);
+            }
         }
     }
 
@@ -707,9 +841,50 @@ public class TypedQueryBuilder {
         return combinedPredicate;
     }
 
+    public static Class<?> getRealTypeParameter(Class<?> clazz, Class<?> keyClass) {
+        while (clazz != null) {
+            // Check if the superclass is parameterized
+            Type genericSuperclass = clazz.getGenericSuperclass();
+            if (genericSuperclass instanceof ParameterizedType parameterizedType) {
+                Type[] typeArguments = parameterizedType.getActualTypeArguments();
+
+                // Assume the first type argument is the one we are resolving
+                if (typeArguments.length > 0) {
+                    return resolveTypeArgument(typeArguments[0], keyClass);
+                }
+            }
+
+            // Traverse the implemented interfaces
+            for (Type iface : clazz.getGenericInterfaces()) {
+                if (iface instanceof ParameterizedType parameterizedInterface) {
+                    Type[] typeArguments = parameterizedInterface.getActualTypeArguments();
+
+                    if (typeArguments.length > 0) {
+                        return resolveTypeArgument(typeArguments[0], keyClass);
+                    }
+                }
+            }
+
+            // Move up the hierarchy
+            clazz = clazz.getSuperclass();
+        }
+
+        throw new IllegalArgumentException("Could not resolve the type parameter.");
+    }
+
+    private static Class<?> resolveTypeArgument(Type typeArgument, Class<?> keyClass) {
+        if (typeArgument instanceof Class<?>) {
+            return (Class<?>) typeArgument;
+        } else if (typeArgument instanceof ParameterizedType) {
+            return (Class<?>) ((ParameterizedType) typeArgument).getRawType();
+        } else {
+            return keyClass;
+        }
+    }
+
     /**
      * Checks if the specified field in the given class is a complex field.
-     *
+     * <p>
      * A complex field is defined as a field that is not primitive, not a String,
      * not overridden, and not one of the following types: UUID, Date, LocalDate,
      * LocalDateTime, OffsetDateTime.
@@ -719,9 +894,15 @@ public class TypedQueryBuilder {
      * @return true if the field is complex, false otherwise.
      * @throws NoSuchFieldException If the field is not found in the class.
      */
-    private static boolean isComplexField(Class<?> clazz, String fieldName) throws NoSuchFieldException {
+    private static boolean isComplexField(Class<?> clazz, Class<?> keyClass, String fieldName) throws NoSuchFieldException {
         try {
+            Class<?> parentParamClass = null;
             Class<?> fieldType = getActualFieldType(clazz, fieldName);
+            if (fieldType == Serializable.class) {
+                parentParamClass = getRealTypeParameter(clazz, keyClass);
+                fieldType = parentParamClass;
+            }
+
             return !fieldType.isPrimitive()
                     && !fieldType.equals(String.class)
                     && !isOverriddenField(clazz, fieldName)
@@ -737,7 +918,7 @@ public class TypedQueryBuilder {
 
     /**
      * Checks if the specified field in the given class is overridden.
-     *
+     * <p>
      * This method traverses the class hierarchy to check for the presence of the @AttributeOverride annotation
      * on the specified field. If the annotation is found, it indicates that the field is overridden.
      *
@@ -760,7 +941,7 @@ public class TypedQueryBuilder {
 
     /**
      * Retrieves the type of the specified field in the given class.
-     *
+     * <p>
      * This method attempts to get the actual field type of the specified field in the provided class.
      * If the field is not found, it throws a RuntimeException.
      *
@@ -779,7 +960,7 @@ public class TypedQueryBuilder {
 
     /**
      * Retrieves the actual type of the specified field in the given class.
-     *
+     * <p>
      * This method traverses the class hierarchy to find the field with the specified name
      * and returns its type. If the field is not found, it throws a NoSuchFieldException.
      *
@@ -827,25 +1008,6 @@ public class TypedQueryBuilder {
     }
 
     /**
-     * Checks if the provided key represents an operator.
-     *
-     * This method attempts to retrieve an operator using the provided key.
-     * If an exception occurs during the retrieval, it returns false.
-     *
-     * @param key The key to be checked.
-     * @return true if the key represents an operator, false otherwise.
-     */
-    private static boolean isOperator(String key) {
-        Operator operator = null;
-        try {
-            operator = Operator.getOperator(key);
-        } catch (Exception ex) {
-
-        }
-        return operator != null;
-    }
-
-    /**
      * Converts the provided value to a `Date` if it is an instance of `LocalDate`, `LocalDateTime`, or `OffsetDateTime`.
      *
      * This method checks the type of the provided value and converts it to a `Date` object if it is a date-related type.
@@ -858,18 +1020,15 @@ public class TypedQueryBuilder {
         if (value == null) {
             return null;
         }
-        if (value instanceof LocalDate) {
-            LocalDate localDate = (LocalDate) value;
+        if (value instanceof LocalDate localDate) {
             value = Date.from(localDate.atStartOfDay()
                     .atZone(ZoneId.systemDefault())
                     .toInstant());
-        } else if (value instanceof LocalDateTime) {
-            LocalDateTime localDateTime = (LocalDateTime) value;
+        } else if (value instanceof LocalDateTime localDateTime) {
             value = Date
                     .from(localDateTime.atZone(ZoneId.systemDefault())
                             .toInstant());
-        } else if (value instanceof OffsetDateTime) {
-            OffsetDateTime offsetDateTime = (OffsetDateTime) value;
+        } else if (value instanceof OffsetDateTime offsetDateTime) {
             value = Date
                     .from(offsetDateTime.toInstant());
         }
@@ -878,7 +1037,7 @@ public class TypedQueryBuilder {
 
     /**
      * Cleans the list of fields by removing complex fields from the list.
-     *
+     * <p>
      * This method creates a copy of the provided fields list to avoid concurrent modification issues.
      * It iterates through the fields and removes any complex fields from the list.
      *
@@ -887,7 +1046,7 @@ public class TypedQueryBuilder {
      * @return A list of cleaned fields with complex fields removed.
      * @throws NoSuchFieldException If a field specified in the fields list is not found in the root class.
      */
-    public static List<String> CleanFields(Class<?> rootClass, List<String> fields) throws NoSuchFieldException {
+    public static List<String> CleanFields(Class<?> rootClass, Class<?> keyClass, List<String> fields) throws NoSuchFieldException {
         // Create a copy of the fields list to avoid concurrent modification issues
         if (fields == null)
             return new ArrayList<>();
@@ -897,14 +1056,13 @@ public class TypedQueryBuilder {
         for (int i = 0; i < cleanedFields.size(); i++) {
             String[] temp = cleanedFields.get(i).split("\\.");
             Class<?> currentClass = rootClass;  // Reset rootClass for each field entry
-            boolean isComplex = false;
 
             // Start from the second element (index 1)
             for (int j = 1; j < temp.length; j++) {
                 String fieldName = temp[j];
 
-                if (isComplexField(currentClass, fieldName)) {
-                    isComplex = true;  // Mark as complex if we encounter a complex field
+                if (isComplexField(currentClass, keyClass, fieldName)) {
+                    // Mark as complex if we encounter a complex field
                     // If we are at the last element and it's complex, remove the entry
                     if (j + 1 == temp.length) {
                         cleanedFields.remove(i);
@@ -914,42 +1072,10 @@ public class TypedQueryBuilder {
                         // Update the current class to the complex field's type for further checks
                         currentClass = getFieldType(currentClass, fieldName);
                     }
-                } else {
-                    isComplex = false;  // The field is simple, no need to remove
                 }
             }
         }
 
         return cleanedFields;
-    }
-
-    /**
-     * Maps a list of `Tuple` objects to a list of maps.
-     *
-     * This method iterates over each `Tuple` in the provided list and converts it to a map.
-     * Each map entry corresponds to a field in the `Tuple`, with the field alias as the key
-     * and the field value as the value.
-     *
-     * @param tuples A list of `Tuple` objects to be converted.
-     * @return A list of maps, where each map represents a `Tuple` with field aliases as keys and field values as values.
-     */
-    public List<Map<String, Object>> mapTuplesToMap(List<Tuple> tuples) {
-        List<Map<String, Object>> result = new ArrayList<>();
-
-        for (Tuple tuple : tuples) {
-            Map<String, Object> map = new HashMap<>();
-
-            // Iterate over the tuple and dynamically add entries to the map
-            for (int i = 0; i < tuple.getElements().size(); i++) {
-                String alias = tuple.getElements().get(i).getAlias();  // Get the alias of the field
-                Object value = tuple.get(i);  // Get the value of the field by index
-
-                map.put(alias, value);  // Map the alias to the field value
-            }
-
-            result.add(map);
-        }
-
-        return result;
     }
 }

@@ -3,22 +3,15 @@ package dev.springharvest.crud.domains.base.graphql;
 import dev.springharvest.crud.domains.base.services.AbstractCrudService;
 import dev.springharvest.crud.domains.base.services.AbstractQueryCrudService;
 import dev.springharvest.expressions.helpers.Operation;
-import dev.springharvest.expressions.builders.JpaSpecificationBuilder;
 import dev.springharvest.shared.constants.Aggregates;
 import dev.springharvest.shared.constants.DataPaging;
 import dev.springharvest.shared.constants.PageData;
-import dev.springharvest.shared.domains.base.mappers.IBaseModelMapper;
 import dev.springharvest.shared.domains.base.models.dtos.BaseDTO;
 import dev.springharvest.shared.domains.base.models.entities.BaseEntity;
 import graphql.schema.DataFetchingEnvironment;
-import jakarta.persistence.Tuple;
-import jakarta.persistence.TupleElement;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Sort;
-import org.springframework.data.jpa.domain.Specification;
 import dev.springharvest.expressions.builders.TypedQueryBuilder;
+import jakarta.persistence.criteria.JoinType;
 
 import java.io.Serializable;
 import java.util.*;
@@ -27,7 +20,6 @@ import java.util.*;
  * A generic implementation of the IGraphQLCrudController interface.
  * This class provides CRUD operations for GraphQL endpoints using generics to handle different types of DTOs, entities, and primary key fields.
  *
- * @param <D> The DTO type, which extends BaseDTO<K>
  * @param <E> The entity type, which extends BaseEntity<K>
  * @param <K> The type of the primary key field, which extends Serializable
  *
@@ -39,13 +31,8 @@ import java.util.*;
  * @author Gilles Djawa (NeroNemesis)
  * @since 1.0
  */
-public class AbstractGraphQLCrudController<D extends BaseDTO<K>, E extends BaseEntity<K>, K extends Serializable>
-        implements IGraphQLCrudController<D, K> {
-
-    /**
-     * Mapper to convert between entities and DTOs.
-     */
-    protected IBaseModelMapper<D, E, K> modelMapper;
+public class AbstractGraphQLCrudController<E extends BaseEntity<K>, K extends Serializable>
+        implements IGraphQLCrudController<E, K> {
 
     /**
      * Service to handle CRUD operations with specifications.
@@ -58,56 +45,86 @@ public class AbstractGraphQLCrudController<D extends BaseDTO<K>, E extends BaseE
     protected Class<E> entityClass;
 
     /**
-     * The list of fields to be selected.
+     * The class type of the primary key field.
      */
-    protected List<String> Fields;
+    protected Class<K> keyClass;
+
+    /**
+     * The list of joins to be performed.
+     */
+    protected Map<String, JoinType> joins;
 
     /**
      * The TypedQueryBuilder to parse filter expressions.
      */
     @Autowired
-    private TypedQueryBuilder TypedQueryBuilder;
+    private TypedQueryBuilder typedQueryBuilder;
 
     /**
      * Constructs an AbstractGraphQLCrudController with the specified mapper, service, and entity class.
      *
-     * @param modelMapper the mapper to convert between entities and DTOs
      * @param crudService the service to handle CRUD operations
      * @param entityClass the class type of the entity
      */
-    protected AbstractGraphQLCrudController(IBaseModelMapper<D, E, K> modelMapper,
-                                            AbstractQueryCrudService<E, K> crudService,
-                                            Class<E> entityClass) {
-        this.modelMapper = modelMapper;
+    protected AbstractGraphQLCrudController(AbstractQueryCrudService<E, K> crudService,
+                                            Class<E> entityClass, Class<K> keyClass) {
         this.crudService = crudService;
         this.entityClass = entityClass;
-        this.Fields = new ArrayList<>();
+        this.keyClass = keyClass;
+        this.joins = new HashMap<>();
     }
 
     @SuppressWarnings("unchecked")
     @Override
-    public PageData<D> search(Map<String, Object> filter, Map<String, Object> clause, DataPaging paging, DataFetchingEnvironment environment) {
-        environment.getSelectionSet().getFields().forEach(x -> Fields.add(x.getFullyQualifiedName()));
+    public PageData<E> search(Map<String, Object> filter, Map<String, Object> clause, DataPaging paging, DataFetchingEnvironment environment) {
+        try {
+            List<String> fields = new ArrayList<>();
+            environment.getSelectionSet().getFields().forEach(x -> {
+                fields.add(x.getFullyQualifiedName());
+                if (x.getArguments() != null && !x.getArguments().isEmpty()) {
+                    x.getArguments().forEach((y, z) -> {
+                        if (y.contains("join"))
+                            joins.put(x.getFullyQualifiedName(), JoinType.valueOf(z.toString()));
+                    });
+                }
+            });
 
-        List<Tuple> data = (List<Tuple>) TypedQueryBuilder.parseFilterExpression(Operation.SEARCH, entityClass, filter, clause, getFormattedFields(Fields), null, paging);
+            if (joins != null && !joins.isEmpty()) {
+                Map<String, JoinType> updatedJoins = new LinkedHashMap<>();
+                List<String> argumentNames = new ArrayList<>(joins.keySet());
+                argumentNames = getFormattedFields(argumentNames);
+                Iterator<String> keyIterator = joins.keySet().iterator();
+                Iterator<String> argumentIterator = argumentNames.iterator();
 
-        for (Tuple result : data) {
-            List<TupleElement<?>> result2 = result.getElements();
-            System.out.println(result);
+                while (keyIterator.hasNext() && argumentIterator.hasNext()) {
+                    String oldKey = keyIterator.next();
+                    String newKey = argumentIterator.next();
+                    updatedJoins.put(newKey, joins.get(oldKey));
+                }
+
+                joins.clear();
+                joins.putAll(updatedJoins);
+            }
+
+            PageData <E> p = (PageData<E>) typedQueryBuilder.parseFilterExpression(Operation.SEARCH, entityClass, keyClass, filter, clause, getFormattedFields(fields), joins, null, paging);
+            return p;
         }
-
-        return new PageData<D>(List.of(), 0, 0, 0);
+        finally {
+            if (joins != null && !joins.isEmpty()) {
+                joins.clear();
+            }
+        }
     }
 
     @Override
     public Object search(Map<String, Object> filter, Map<String, Object> clause, List<String> fields, Aggregates aggregatesFilter, DataPaging paging) {
         List<String> formattedFields = fields != null ? getFormattedFields(fields) : null;
-        return TypedQueryBuilder.parseFilterExpression(Operation.SEARCH, entityClass, filter, clause, formattedFields, getFormattedAggregates(aggregatesFilter, formattedFields), paging);
+        return typedQueryBuilder.parseFilterExpression(Operation.SEARCH, entityClass, keyClass, filter, clause, formattedFields, null, getFormattedAggregates(aggregatesFilter, formattedFields), paging);
     }
 
     @Override
     public long count(Map<String, Object> filter, Map<String, Object> clause, List<String> fields) {
-        return (long) TypedQueryBuilder.parseFilterExpression(Operation.COUNT, entityClass, filter, clause, getFormattedFields(fields), null, null);
+        return (long) typedQueryBuilder.parseFilterExpression(Operation.COUNT, entityClass, keyClass, filter, clause, getFormattedFields(fields), null, null, null);
     }
 
     private static Aggregates getFormattedAggregates(Aggregates aggregates, List<String> fields) {
@@ -144,7 +161,11 @@ public class AbstractGraphQLCrudController<D extends BaseDTO<K>, E extends BaseE
         List<String> formattedFields = new ArrayList<>();
 
         fields.forEach(x -> {
-            if (x.contains("/") || x.contains("_")) {
+            if (x.contains(".data/") || x.contains("/") || x.contains("_")) {
+                if (x.contains(".data/")) {
+                    String[] parts = x.split("\\.");
+                    x = x.replace(parts[0] + ".", "");
+                }
                 if (x.contains("/")) {
                     String[] parts = x.split("/");
                     StringBuilder newString = new StringBuilder(parts[0]);
@@ -172,9 +193,11 @@ public class AbstractGraphQLCrudController<D extends BaseDTO<K>, E extends BaseE
                     }
                 }
             } else {
-                if (!x.contains("_results__count___"))
-                    if (!formattedFields.contains(x)) {
-                        formattedFields.add(x);
+                if (!x.contains("currentPage") && !x.contains("pageSize") && !x.contains("totalPages") && !x.contains("currentPageCount") && !x.contains("total"))
+                    if (!(x.split("\\.").length == 2 && x.split("\\.")[1].equals("data"))) {
+                        if (!formattedFields.contains(x)) {
+                            formattedFields.add(x); // This case should normally not happen
+                        }
                     }
             }
         });

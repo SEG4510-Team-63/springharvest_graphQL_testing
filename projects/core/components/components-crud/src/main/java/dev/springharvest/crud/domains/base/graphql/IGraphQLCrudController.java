@@ -4,6 +4,7 @@ import dev.springharvest.shared.constants.Aggregates;
 import dev.springharvest.shared.constants.DataPaging;
 import dev.springharvest.shared.constants.PageData;
 import dev.springharvest.shared.domains.base.models.dtos.BaseDTO;
+import dev.springharvest.shared.domains.base.models.entities.BaseEntity;
 import graphql.schema.DataFetchingEnvironment;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -19,7 +20,6 @@ import java.util.Map;
  * It provides methods for performing search queries on entities.
  * The @Operation annotation is used to define the OpenAPI specification for the controller.
  *
- * @param <D> The DTO object for a domain
  * @param <K> The type of the id (primary key) field pertaining to the entity relating to the DTO
  *
  * @see PageData
@@ -30,7 +30,7 @@ import java.util.Map;
  *
  * @author Gilles Djawa (NeroNemesis)
  */
-public interface IGraphQLCrudController<D extends BaseDTO<K>, K extends Serializable> {
+public interface IGraphQLCrudController<E extends BaseEntity<K>, K extends Serializable> {
 
     /**
      * Performs a search query on the entity based on the provided filter and paging information.
@@ -59,7 +59,7 @@ public interface IGraphQLCrudController<D extends BaseDTO<K>, K extends Serializ
                             required = true),
             },
             responses = {@ApiResponse(responseCode = "200", description = "The queried entities ordered according to the paging or their count.")})
-    PageData<D> search(@RequestParam(name = "filter") Map<String, Object> filter,
+    PageData<E> search(@RequestParam(name = "filter") Map<String, Object> filter,
                        @RequestParam(name = "clause") Map<String, Object> clause,
                        @RequestParam(name = "paging") DataPaging paging,
                        @RequestParam(name = "environment") DataFetchingEnvironment environment) throws NoSuchFieldException;

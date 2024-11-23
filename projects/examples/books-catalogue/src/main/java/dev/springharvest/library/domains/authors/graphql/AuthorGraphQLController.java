@@ -1,14 +1,12 @@
 package dev.springharvest.library.domains.authors.graphql;
 
 import dev.springharvest.crud.domains.base.graphql.AbstractGraphQLCrudController;
-import dev.springharvest.library.domains.authors.models.dtos.AuthorDTO;
 import dev.springharvest.library.domains.authors.models.entities.AuthorEntity;
 import java.util.*;
 
 import dev.springharvest.library.domains.authors.services.AuthorQueryCrudService;
 import dev.springharvest.shared.constants.DataPaging;
 import dev.springharvest.shared.constants.PageData;
-import dev.springharvest.shared.domains.base.mappers.IBaseModelMapper;
 import graphql.schema.DataFetchingEnvironment;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,15 +16,15 @@ import org.springframework.stereotype.Controller;
 
 @Slf4j
 @Controller
-public class AuthorGraphQLController extends AbstractGraphQLCrudController<AuthorDTO, AuthorEntity, UUID> {
+public class AuthorGraphQLController extends AbstractGraphQLCrudController<AuthorEntity, UUID> {
 
   @Autowired
-  protected AuthorGraphQLController(AuthorQueryCrudService baseService, IBaseModelMapper<AuthorDTO, AuthorEntity, UUID> modelMapper) {
-    super(modelMapper, baseService, AuthorEntity.class);
+  protected AuthorGraphQLController(AuthorQueryCrudService baseService) {
+    super(baseService, AuthorEntity.class, UUID.class);
   }
 
   @QueryMapping
-  public PageData<AuthorDTO> searchAuthors(@Argument Map<String, Object> filter, @Argument Map<String, Object> clause, @Argument DataPaging paging, DataFetchingEnvironment environment) {
+  public PageData<AuthorEntity> searchAuthors(@Argument Map<String, Object> filter, @Argument Map<String, Object> clause, @Argument DataPaging paging, DataFetchingEnvironment environment) {
     return search(filter, clause, paging, environment);
   }
 

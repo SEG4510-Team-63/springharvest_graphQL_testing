@@ -1,5 +1,5 @@
 extend type Query {
-    searchAuthors(filter: AuthorFilter = {}, clause: ClauseFilter = {}, paging: PageRequest = { page: 1, size: 2, sortOrders: [{ field: "Author.pet.name", direction: ASC }]}) : [Author!]
+    searchAuthors(filter: AuthorFilter = {}, clause: ClauseFilter = {}, paging: PageRequest = { page: 1, size: 2, sortOrders: [{ field: "Author.pet.name", direction: ASC }]}) : AuthorPageData
     countAuthors(filter : AuthorFilter = {}, clause: ClauseFilter = {}, fields: String) : Long
 }
 
@@ -12,6 +12,15 @@ type Author implements BaseEntity{
     name: String!
     pet(join: Join): Pet
     traceData: TraceData
+}
+
+type AuthorPageData implements PageData{
+    currentPage : Int
+    pageSize : Int
+    total : Long
+    totalPages : Int
+    currentPageCount : Int
+    data : [Author]!
 }
 
 input AuthorFilter{
