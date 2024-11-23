@@ -20,15 +20,15 @@ import java.util.UUID;
 
 @Slf4j
 @Controller
-public class PetGraphQLController extends AbstractGraphQLCrudController<PetDTO, PetEntity, UUID> {
+public class PetGraphQLController extends AbstractGraphQLCrudController<PetEntity, UUID> {
 
     @Autowired
-    public  PetGraphQLController(IBaseModelMapper<PetDTO, PetEntity, UUID> modelMapper, PetQueryCrudService baseService){
-        super(modelMapper, baseService, PetEntity.class);
+    public  PetGraphQLController(PetQueryCrudService baseService){
+        super(baseService, PetEntity.class, UUID.class);
     }
 
     @QueryMapping
-    public PageData<PetDTO> searchPets(@Argument Map<String, Object> filter, @Argument Map<String, Object> clause, @Argument DataPaging paging, DataFetchingEnvironment environment) {
+    public PageData<PetEntity> searchPets(@Argument Map<String, Object> filter, @Argument Map<String, Object> clause, @Argument DataPaging paging, DataFetchingEnvironment environment) {
         return search(filter, clause, paging, environment);
     }
 

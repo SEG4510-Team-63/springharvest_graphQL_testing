@@ -18,15 +18,15 @@ import org.springframework.stereotype.Controller;
 
 @Slf4j
 @Controller
-public class BookGraphQLController extends AbstractGraphQLCrudController<BookDTO, BookEntity, UUID> {
+public class BookGraphQLController extends AbstractGraphQLCrudController<BookEntity, UUID> {
 
   @Autowired
-  protected BookGraphQLController(IBaseModelMapper<BookDTO, BookEntity, UUID> modelMapper, BookQueryCrudService baseService) {
-      super(modelMapper, baseService, BookEntity.class);
+  protected BookGraphQLController(BookQueryCrudService baseService) {
+      super(baseService, BookEntity.class, UUID.class);
   }
 
     @QueryMapping
-    public PageData<BookDTO> searchBooks(@Argument Map<String, Object> filter, @Argument Map<String, Object> clause, @Argument DataPaging paging, DataFetchingEnvironment environment) {
+    public PageData<BookEntity> searchBooks(@Argument Map<String, Object> filter, @Argument Map<String, Object> clause, @Argument DataPaging paging, DataFetchingEnvironment environment) {
         return search(filter, clause, paging, environment);
     }
 

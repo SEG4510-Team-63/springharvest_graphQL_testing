@@ -1,4 +1,4 @@
-package dev.springharvest.library.config;
+package dev.springharvest.expressions.config;
 
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Bean;
