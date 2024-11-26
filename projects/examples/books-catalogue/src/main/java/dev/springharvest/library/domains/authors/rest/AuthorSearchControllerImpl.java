@@ -1,4 +1,4 @@
-package dev.springharvest.library.domains.authors.controllers.rest;
+package dev.springharvest.library.domains.authors.rest;
 
 import dev.springharvest.library.domains.authors.constants.AuthorConstants;
 import dev.springharvest.library.domains.authors.mappers.IAuthorMapper;

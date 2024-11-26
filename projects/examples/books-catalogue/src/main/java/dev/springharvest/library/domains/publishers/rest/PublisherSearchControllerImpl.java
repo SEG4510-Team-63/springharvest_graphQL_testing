@@ -1,4 +1,4 @@
-package dev.springharvest.library.domains.publishers.controllers.rest;
+package dev.springharvest.library.domains.publishers.rest;
 
 import dev.springharvest.library.domains.publishers.constants.PublisherConstants;
 import dev.springharvest.library.domains.publishers.mappers.IPublisherMapper;

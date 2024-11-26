@@ -1,4 +1,4 @@
-package dev.springharvest.library.domains.publishers.controllers.rest;
+package dev.springharvest.library.domains.publishers.rest;
 
 import dev.springharvest.crud.domains.base.rest.AbstractCrudController;
 import dev.springharvest.library.domains.publishers.constants.PublisherConstants;

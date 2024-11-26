@@ -9,7 +9,6 @@ import dev.springharvest.shared.domains.embeddables.traces.dates.models.entities
 import dev.springharvest.shared.domains.embeddables.traces.dates.models.entities.TraceDatesEntity_;
 
 import java.time.LocalDate;
-import java.util.Date;
 import java.util.Map;
 import java.util.function.BiConsumer;
 import org.springframework.stereotype.Component;
@@ -63,8 +62,8 @@ public class TraceDatesMetadata extends EntityMetadata<TraceDatesEntity> {
       private static class Maps {
 
         private static final Map<String, Class<?>> ROOTS = Map.of(DOMAIN_SINGULAR, TraceDatesEntity.class);
-        private static final Map<String, Class<?>> ROOT_PATH_CLAZZ_MAP = Map.of(DATE_CREATED, Date.class,
-                                                                                DATE_UPDATED, Date.class
+        private static final Map<String, Class<?>> ROOT_PATH_CLAZZ_MAP = Map.of(DATE_CREATED, LocalDate.class,
+                                                                                DATE_UPDATED, LocalDate.class
                                                                                );
 
         private static final Map<String, BiConsumer<TraceDatesEntity, Object>> ROOT_MAPPING_FUNCTIONS = Map.of(
