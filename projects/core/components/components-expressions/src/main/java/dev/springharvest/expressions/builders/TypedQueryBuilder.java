@@ -94,7 +94,6 @@ public class TypedQueryBuilder {
         try {
             try {
                 fields = CleanFields(rootClass, keyClass, fields);
-                System.out.println("Fields : " + fields);
             } catch (NoSuchFieldException e) {
                 throw new RuntimeException("Field not found.\n For each field make sure the field's name exists in the class corresponding to your schema definition and follows this format 'Schema type name' + '.' + 'fieldName.\n e.g: 'Book.title', 'Book.author.pet.name'.");
             }
@@ -200,14 +199,17 @@ public class TypedQueryBuilder {
                 int totalPages = (int) Math.ceil((double) total / paging.size());
                 //Need the mapper here
                 List<Tuple> resultsList = query.getResultList();
-                System.out.println("ResultsList: " + resultsList);
                 int currentPageCount = resultsList.size();
                 GenericEntityMapper<T> mapper = new GenericEntityMapper<>();
                 if (aggregates == null) // If no aggregates are specified, return a list of entities
                 {
-                    PageData<T> pageData = new PageData<>(mapper.mapTuplesToEntity(resultsList, rootClass), paging.page(), paging.size(), total, totalPages, currentPageCount);
-                    System.out.println("PageData: " + pageData);
-                    return pageData;
+                    return new PageData<>(
+                            mapper.mapTuplesToEntity(resultsList, rootClass),
+                            paging.page(),
+                            paging.size(),
+                            total,
+                            totalPages,
+                            currentPageCount);
                 }
                 List<Map<String, Object>> dataMap = mapper.mapTuplesToMap(resultsList);
                 Map<String, Object> pagingMap = new HashMap<>();

@@ -17,17 +17,4 @@ public class BookCrudService extends AbstractCrudService<BookEntity, UUID> {
   protected BookCrudService(IBookCrudRepository baseRepository) {
     super(baseRepository);
   }
-
-  public List<BookEntity> findByAuthorId(UUID id) {
-    return ((IBookCrudRepository) crudRepository).findByAuthorId(id);
-  }
-
-  public List<BookEntity> findByPublisherId(UUID id) {
-    return ((IBookCrudRepository) crudRepository).findByPublisherId(id);
-  }
-
-  public Page<BookEntity> findByTitleContaining(String title, Pageable pageable){
-    return ((IBookCrudRepository) crudRepository).findByTitleContainingIgnoreCase(title, pageable);
-  }
-
 }
