@@ -60,7 +60,6 @@ project(":dependency-management") {
     }
 }
 
-
 allprojects {
     apply plugin: 'jacoco'
 
