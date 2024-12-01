@@ -1,12 +1,9 @@
 package dev.springharvest.library.domains.pet.graphql;
 
 import dev.springharvest.crud.domains.base.graphql.AbstractGraphQLCrudController;
-import dev.springharvest.library.domains.pet.models.dtos.PetDTO;
 import dev.springharvest.library.domains.pet.models.entities.PetEntity;
-import dev.springharvest.library.domains.pet.service.PetQueryCrudService;
 import dev.springharvest.shared.constants.DataPaging;
 import dev.springharvest.shared.constants.PageData;
-import dev.springharvest.shared.domains.base.mappers.IBaseModelMapper;
 import graphql.schema.DataFetchingEnvironment;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,9 +19,8 @@ import java.util.UUID;
 @Controller
 public class PetGraphQLController extends AbstractGraphQLCrudController<PetEntity, UUID> {
 
-    @Autowired
-    public  PetGraphQLController(PetQueryCrudService baseService){
-        super(baseService, PetEntity.class, UUID.class);
+    public  PetGraphQLController(){
+        super(PetEntity.class, UUID.class);
     }
 
     @QueryMapping

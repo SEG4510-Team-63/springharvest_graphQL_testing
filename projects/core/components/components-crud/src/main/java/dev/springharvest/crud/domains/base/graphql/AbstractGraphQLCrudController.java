@@ -1,7 +1,5 @@
 package dev.springharvest.crud.domains.base.graphql;
 
-import dev.springharvest.crud.domains.base.services.AbstractCrudService;
-import dev.springharvest.crud.domains.base.services.AbstractQueryCrudService;
 import dev.springharvest.expressions.helpers.Operation;
 import dev.springharvest.shared.constants.Aggregates;
 import dev.springharvest.shared.constants.DataPaging;
@@ -24,7 +22,6 @@ import java.util.*;
  * @param <K> The type of the primary key field, which extends Serializable
  *
  * @see IGraphQLCrudController
- * @see AbstractCrudService
  * @see BaseDTO
  * @see BaseEntity
  * @see TypedQueryBuilder
@@ -33,11 +30,6 @@ import java.util.*;
  */
 public class AbstractGraphQLCrudController<E extends BaseEntity<K>, K extends Serializable>
         implements IGraphQLCrudController<E, K> {
-
-    /**
-     * Service to handle CRUD operations with specifications.
-     */
-    protected AbstractQueryCrudService<E, K> crudService;
 
     /**
      * The class type of the entity.
@@ -63,12 +55,9 @@ public class AbstractGraphQLCrudController<E extends BaseEntity<K>, K extends Se
     /**
      * Constructs an AbstractGraphQLCrudController with the specified mapper, service, and entity class.
      *
-     * @param crudService the service to handle CRUD operations
      * @param entityClass the class type of the entity
      */
-    protected AbstractGraphQLCrudController(AbstractQueryCrudService<E, K> crudService,
-                                            Class<E> entityClass, Class<K> keyClass) {
-        this.crudService = crudService;
+    protected AbstractGraphQLCrudController(Class<E> entityClass, Class<K> keyClass) {
         this.entityClass = entityClass;
         this.keyClass = keyClass;
         this.joins = new HashMap<>();
@@ -78,36 +67,10 @@ public class AbstractGraphQLCrudController<E extends BaseEntity<K>, K extends Se
     @Override
     public PageData<E> search(Map<String, Object> filter, Map<String, Object> clause, DataPaging paging, DataFetchingEnvironment environment) {
         try {
-            List<String> fields = new ArrayList<>();
-            environment.getSelectionSet().getFields().forEach(x -> {
-                fields.add(x.getFullyQualifiedName());
-                if (x.getArguments() != null && !x.getArguments().isEmpty()) {
-                    x.getArguments().forEach((y, z) -> {
-                        if (y.contains("join"))
-                            joins.put(x.getFullyQualifiedName(), JoinType.valueOf(z.toString()));
-                    });
-                }
-            });
+            List<String> fields = extractFieldsFromEnvironment(environment);
+            processJoins();
 
-            if (joins != null && !joins.isEmpty()) {
-                Map<String, JoinType> updatedJoins = new LinkedHashMap<>();
-                List<String> argumentNames = new ArrayList<>(joins.keySet());
-                argumentNames = getFormattedFields(argumentNames);
-                Iterator<String> keyIterator = joins.keySet().iterator();
-                Iterator<String> argumentIterator = argumentNames.iterator();
-
-                while (keyIterator.hasNext() && argumentIterator.hasNext()) {
-                    String oldKey = keyIterator.next();
-                    String newKey = argumentIterator.next();
-                    updatedJoins.put(newKey, joins.get(oldKey));
-                }
-
-                joins.clear();
-                joins.putAll(updatedJoins);
-            }
-
-            PageData <E> p = (PageData<E>) typedQueryBuilder.parseFilterExpression(Operation.SEARCH, entityClass, keyClass, filter, clause, getFormattedFields(fields), joins, null, paging);
-            return p;
+            return (PageData<E>) typedQueryBuilder.parseFilterExpression(Operation.SEARCH, entityClass, keyClass, filter, clause, getFormattedFields(fields), joins, null, paging);
         }
         finally {
             if (joins != null && !joins.isEmpty()) {
@@ -203,5 +166,39 @@ public class AbstractGraphQLCrudController<E extends BaseEntity<K>, K extends Se
         });
 
         return formattedFields;
+    }
+
+    private List<String> extractFieldsFromEnvironment(DataFetchingEnvironment environment) {
+        List<String> fields = new ArrayList<>();
+        environment.getSelectionSet().getFields().forEach(x -> {
+            fields.add(x.getFullyQualifiedName());
+            if (x.getArguments() != null && !x.getArguments().isEmpty()) {
+                x.getArguments().forEach((y, z) -> {
+                    if (y.contains("join"))
+                        joins.put(x.getFullyQualifiedName(), JoinType.valueOf(z.toString()));
+                });
+            }
+        });
+        return fields;
+    }
+
+    private void processJoins() {
+        if (joins == null || joins.isEmpty()) {
+            return;
+        }
+
+        Map<String, JoinType> updatedJoins = new LinkedHashMap<>();
+        List<String> formattedFields = getFormattedFields(new ArrayList<>(joins.keySet()));
+        Iterator<String> keyIterator = joins.keySet().iterator();
+        Iterator<String> formattedFieldIterator = formattedFields.iterator();
+
+        while (keyIterator.hasNext() && formattedFieldIterator.hasNext()) {
+            String oldKey = keyIterator.next();
+            String newKey = formattedFieldIterator.next();
+            updatedJoins.put(newKey, joins.get(oldKey));
+        }
+
+        joins.clear();
+        joins.putAll(updatedJoins);
     }
 }

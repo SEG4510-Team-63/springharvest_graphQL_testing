@@ -1,14 +1,12 @@
 package dev.springharvest.library.domains.books.graphql;
 
 import dev.springharvest.crud.domains.base.graphql.AbstractGraphQLCrudController;
-import dev.springharvest.library.domains.books.models.dtos.BookDTO;
 import dev.springharvest.library.domains.books.models.entities.BookEntity;
 import java.util.*;
-import dev.springharvest.library.domains.books.services.BookQueryCrudService;
+
 import dev.springharvest.shared.constants.Aggregates;
 import dev.springharvest.shared.constants.DataPaging;
 import dev.springharvest.shared.constants.PageData;
-import dev.springharvest.shared.domains.base.mappers.IBaseModelMapper;
 import graphql.schema.DataFetchingEnvironment;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,9 +18,8 @@ import org.springframework.stereotype.Controller;
 @Controller
 public class BookGraphQLController extends AbstractGraphQLCrudController<BookEntity, UUID> {
 
-  @Autowired
-  protected BookGraphQLController(BookQueryCrudService baseService) {
-      super(baseService, BookEntity.class, UUID.class);
+  protected BookGraphQLController() {
+      super(BookEntity.class, UUID.class);
   }
 
     @QueryMapping

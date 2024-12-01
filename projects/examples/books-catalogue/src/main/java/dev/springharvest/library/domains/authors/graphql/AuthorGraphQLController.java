@@ -4,7 +4,6 @@ import dev.springharvest.crud.domains.base.graphql.AbstractGraphQLCrudController
 import dev.springharvest.library.domains.authors.models.entities.AuthorEntity;
 import java.util.*;
 
-import dev.springharvest.library.domains.authors.services.AuthorQueryCrudService;
 import dev.springharvest.shared.constants.DataPaging;
 import dev.springharvest.shared.constants.PageData;
 import graphql.schema.DataFetchingEnvironment;
@@ -18,9 +17,8 @@ import org.springframework.stereotype.Controller;
 @Controller
 public class AuthorGraphQLController extends AbstractGraphQLCrudController<AuthorEntity, UUID> {
 
-  @Autowired
-  protected AuthorGraphQLController(AuthorQueryCrudService baseService) {
-    super(baseService, AuthorEntity.class, UUID.class);
+  protected AuthorGraphQLController() {
+    super(AuthorEntity.class, UUID.class);
   }
 
   @QueryMapping
@@ -32,23 +30,4 @@ public class AuthorGraphQLController extends AbstractGraphQLCrudController<Autho
   public long countAuthors(@Argument Map<String, Object> filter, @Argument Map<String, Object> clause, @Argument List<String> fields) {
     return count(filter, clause, fields);
   }
-
-
-//  @MutationMapping
-//  AuthorDTO authorMutation(@Argument @NotNull UUID id, @Argument @NotNull AuthorMutationInput input)
-//  {
-//    var op = baseService.findById(id);
-//    if (op.isPresent())
-//    {
-//      var author = op.get();
-//      author.setName(input.name());
-//      author.getTraceData().getTraceDates().setDateUpdated(LocalDate.now());
-//      author.getTraceData().getTraceUsers().setUpdatedBy(input.updatedBy());
-//      baseService.update(author);
-//      return modelMapper.entityToDto(author);
-//    }
-//    else {
-//      throw new EntityNotFoundException(String.format("No entity found with id: %s", id));
-//    }
-//  }
 }
