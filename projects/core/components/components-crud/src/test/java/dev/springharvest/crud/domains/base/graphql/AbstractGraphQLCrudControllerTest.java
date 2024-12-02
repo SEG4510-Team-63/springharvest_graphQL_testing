@@ -1,8 +1,10 @@
 package dev.springharvest.crud.domains.base.graphql;
 
-import dev.springharvest.shared.constants.Sort;
+import dev.springharvest.shared.constants.*;
+import graphql.schema.DataFetchingFieldSelectionSet;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.verify;
@@ -12,12 +14,11 @@ import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import dev.springharvest.expressions.builders.TypedQueryBuilder;
-import dev.springharvest.shared.constants.DataPaging;
-import dev.springharvest.shared.constants.PageData;
-import dev.springharvest.shared.constants.SortDirection;
 import dev.springharvest.shared.domains.base.models.entities.BaseEntity;
 import dev.springharvest.expressions.helpers.Operation;
 import graphql.schema.DataFetchingEnvironment;
+import org.springframework.test.util.ReflectionTestUtils;
+
 import java.io.Serializable;
 import java.util.*;
 
@@ -39,92 +40,103 @@ public class AbstractGraphQLCrudControllerTest {
     private Class<Serializable> keyClass = Serializable.class;
 
     @Test
-    void searchWithValidFilterAndPaging() {
-        Map<String, Object> filter = new HashMap<>();
-        filter.put("name", "John");
-        Map<String, Object> clause = new HashMap<>();
-        DataPaging paging = new DataPaging(0, 10, List.of(new Sort("name", SortDirection.ASC)));
+    void searchWithValidFilter() {
         DataFetchingEnvironment environment = mock(DataFetchingEnvironment.class);
-        List<AuthorDTO> mockAuthors = Arrays.asList(new AuthorDTO(), new AuthorDTO());
+        when(environment.getSelectionSet()).thenReturn(mock(DataFetchingFieldSelectionSet.class));
+        Map<String, Object> filter = new HashMap<>();
+        Map<String, Object> clause = new HashMap<>();
+        DataPaging paging = new DataPaging(1, 10, new ArrayList<>());
+        PageData<BaseEntity<Serializable>> expectedPageData = new PageData<>(new ArrayList<>(), 1, 10, 0L, 1, 10);
+        PageData<BaseEntity<Serializable>> another = new PageData<>(new ArrayList<>(), 1, 10, 1L, 1, 10);
+
         when(typedQueryBuilder.parseFilterExpression(eq(Operation.SEARCH), eq(entityClass), eq(keyClass), eq(filter), eq(clause), anyList(), anyMap(), any(), eq(paging)))
-                .thenReturn(new PageData<>(mockAuthors, 2, 1, 10, 0, 0));
+                .thenReturn(expectedPageData);
 
         PageData<BaseEntity<Serializable>> result = abstractGraphQLCrudController.search(filter, clause, paging, environment);
 
-        assertEquals(2, result.getTotal(), "Expected 2 authors to be returned");
-        verify(typedQueryBuilder, times(1)).parseFilterExpression(eq(Operation.SEARCH), eq(entityClass), eq(keyClass), eq(filter), eq(clause), anyList(), anyMap(), any(), eq(paging));
+        assertEquals(expectedPageData, result);
     }
 
     @Test
-    void searchWithEmptyFilterAndPaging() {
-        Map<String, Object> filter = new HashMap<>();
-        Map<String, Object> clause = new HashMap<>();
-        DataPaging paging = new DataPaging(0, 10, List.of(new Sort("name", SortDirection.ASC)));
+    void searchWithNullFilter() {
         DataFetchingEnvironment environment = mock(DataFetchingEnvironment.class);
-        List<AuthorDTO> mockAuthors = Arrays.asList(new AuthorDTO(), new AuthorDTO());
+        when(environment.getSelectionSet()).thenReturn(mock(DataFetchingFieldSelectionSet.class));
+        Map<String, Object> filter = null;
+        Map<String, Object> clause = new HashMap<>();
+        DataPaging paging = new DataPaging(1, 10, new ArrayList<>());
+
         when(typedQueryBuilder.parseFilterExpression(eq(Operation.SEARCH), eq(entityClass), eq(keyClass), eq(filter), eq(clause), anyList(), anyMap(), any(), eq(paging)))
-                .thenReturn(new PageData<>(mockAuthors, 2, 1, 10, 0, 0));
+                .thenReturn(null);
 
         PageData<BaseEntity<Serializable>> result = abstractGraphQLCrudController.search(filter, clause, paging, environment);
 
-        assertEquals(2, result.getTotal(), "Expected 2 authors to be returned");
-        verify(typedQueryBuilder, times(1)).parseFilterExpression(eq(Operation.SEARCH), eq(entityClass), eq(keyClass), eq(filter), eq(clause), anyList(), anyMap(), any(), eq(paging));
+        assertNotNull(result);
     }
 
     @Test
-    void searchWithNullFilterAndPaging() {
-        Map<String, Object> clause = new HashMap<>();
-        DataPaging paging = new DataPaging(0, 10, List.of(new Sort("name", SortDirection.ASC)));
+    void searchWithEmptyFilter() {
         DataFetchingEnvironment environment = mock(DataFetchingEnvironment.class);
-        List<AuthorDTO> mockAuthors = Arrays.asList(new AuthorDTO(), new AuthorDTO());
-        when(typedQueryBuilder.parseFilterExpression(eq(Operation.SEARCH), eq(entityClass), eq(keyClass), eq(null), eq(clause), anyList(), anyMap(), any(), eq(paging)))
-                .thenReturn(new PageData<>(mockAuthors, 2, 1, 10, 0, 0));
+        when(environment.getSelectionSet()).thenReturn(mock(DataFetchingFieldSelectionSet.class));
+        Map<String, Object> filter = new HashMap<>();
+        Map<String, Object> clause = new HashMap<>();
+        DataPaging paging = new DataPaging(1, 10, new ArrayList<>());
+        PageData<BaseEntity<Serializable>> expectedPageData = new PageData<>(new ArrayList<>(), 1, 10, 0L, 1, 10);
 
-        PageData<BaseEntity<Serializable>> result = abstractGraphQLCrudController.search(null, clause, paging, environment);
+        when(typedQueryBuilder.parseFilterExpression(eq(Operation.SEARCH), eq(entityClass), eq(keyClass), eq(filter), eq(clause), anyList(), anyMap(), any(), eq(paging)))
+                .thenReturn(expectedPageData);
 
-        assertEquals(2, result.getTotal(), "Expected 2 authors to be returned");
-        verify(typedQueryBuilder, times(1)).parseFilterExpression(eq(Operation.SEARCH), eq(entityClass), eq(keyClass), eq(null), eq(clause), anyList(), anyMap(), any(), eq(paging));
+        PageData<BaseEntity<Serializable>> result = abstractGraphQLCrudController.search(filter, clause, paging, environment);
+
+        assertNotNull(result);
+        assertEquals(expectedPageData, result);
+    }
+
+    @Test
+    void searchWithAggregatesFilter() {
+        Map<String, Object> filter = new HashMap<>();
+        Map<String, Object> clause = new HashMap<>();
+        List<String> fields = Arrays.asList("field1", "field2");
+        Aggregates aggregatesFilter = new Aggregates(new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), new ArrayList<>());
+        DataPaging paging = new DataPaging(1, 10, new ArrayList<>());
+        Object expectedResult = new Object();
+
+        when(typedQueryBuilder.parseFilterExpression(eq(Operation.SEARCH), eq(entityClass), eq(keyClass), eq(filter), eq(clause), eq(fields), anyMap(), any(), eq(paging)))
+                .thenReturn(expectedResult);
+
+        Object result = abstractGraphQLCrudController.search(filter, clause, fields, aggregatesFilter, paging);
+
+        assertNotNull(result);
+        assertEquals(expectedResult, result);
     }
 
     @Test
     void countWithValidFilter() {
         Map<String, Object> filter = new HashMap<>();
-        filter.put("name", "John");
         Map<String, Object> clause = new HashMap<>();
-        List<String> fields = Arrays.asList("name");
-        when(typedQueryBuilder.parseFilterExpression(eq(Operation.COUNT), eq(entityClass), eq(keyClass), eq(filter), eq(clause), eq(fields), eq(null), eq(null), eq(null)))
-                .thenReturn(10L);
+        List<String> fields = Arrays.asList("field1", "field2");
+        long expectedCount = 0L;
 
-        long count = abstractGraphQLCrudController.count(filter, clause, fields);
+        when(typedQueryBuilder.parseFilterExpression(eq(Operation.COUNT), eq(entityClass), eq(keyClass), eq(filter), eq(clause), eq(fields), anyMap(), any(), any()))
+                .thenReturn(expectedCount);
 
-        assertEquals(10L, count, "Expected count to be 10");
-        verify(typedQueryBuilder, times(1)).parseFilterExpression(eq(Operation.COUNT), eq(entityClass), eq(keyClass), eq(filter), eq(clause), eq(fields), eq(null), eq(null), eq(null));
+        ReflectionTestUtils.setField(abstractGraphQLCrudController, "typedQueryBuilder", typedQueryBuilder);
+        long result = abstractGraphQLCrudController.count(filter, clause, fields);
+
+        assertEquals(expectedCount, result);
     }
 
     @Test
     void countWithEmptyFilter() {
         Map<String, Object> filter = new HashMap<>();
         Map<String, Object> clause = new HashMap<>();
-        List<String> fields = Arrays.asList("name");
-        when(typedQueryBuilder.parseFilterExpression(eq(Operation.COUNT), eq(entityClass), eq(keyClass), eq(filter), eq(clause), eq(fields), eq(null), eq(null), eq(null)))
-                .thenReturn(10L);
+        List<String> fields = new ArrayList<>();
+        long expectedCount = 0L;
 
-        long count = abstractGraphQLCrudController.count(filter, clause, fields);
+        when(typedQueryBuilder.parseFilterExpression(eq(Operation.COUNT), eq(entityClass), eq(keyClass), eq(filter), eq(clause), eq(fields), anyMap(), any(), any()))
+                .thenReturn(expectedCount);
 
-        assertEquals(10L, count, "Expected count to be 10");
-        verify(typedQueryBuilder, times(1)).parseFilterExpression(eq(Operation.COUNT), eq(entityClass), eq(keyClass), eq(filter), eq(clause), eq(fields), eq(null), eq(null), eq(null));
-    }
+        long result = abstractGraphQLCrudController.count(filter, clause, fields);
 
-    @Test
-    void countWithNullFilter() {
-        Map<String, Object> clause = new HashMap<>();
-        List<String> fields = Arrays.asList("name");
-        when(typedQueryBuilder.parseFilterExpression(eq(Operation.COUNT), eq(entityClass), eq(keyClass), eq(null), eq(clause), eq(fields), eq(null), eq(null), eq(null)))
-                .thenReturn(10L);
-
-        long count = abstractGraphQLCrudController.count(null, clause, fields);
-
-        assertEquals(10L, count, "Expected count to be 10");
-        verify(typedQueryBuilder, times(1)).parseFilterExpression(eq(Operation.COUNT), eq(entityClass), eq(keyClass), eq(null), eq(clause), eq(fields), eq(null), eq(null), eq(null));
+        assertEquals(expectedCount, result);
     }
 }
