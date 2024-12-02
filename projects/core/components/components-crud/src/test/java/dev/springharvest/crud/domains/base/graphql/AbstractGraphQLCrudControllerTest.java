@@ -20,9 +20,19 @@ import dev.springharvest.expressions.helpers.Operation;
 import graphql.schema.DataFetchingEnvironment;
 import java.io.Serializable;
 import java.util.*;
-import dev.springharvest.library.codegen.domains.authors.author.models.dtos.AuthorDTO;
 
 public class AbstractGraphQLCrudControllerTest {
+
+    private class AuthorDTO{
+        public String name;
+        public UUID id;
+        public PetDTO pet;
+    }
+    private class PetDTO{
+        public String name;
+        public UUID id;
+
+    }
     private TypedQueryBuilder typedQueryBuilder = mock(TypedQueryBuilder.class);
     private AbstractGraphQLCrudController<BaseEntity<Serializable>, Serializable> abstractGraphQLCrudController = mock(AbstractGraphQLCrudController.class);
     private Class<BaseEntity> entityClass = BaseEntity.class;
