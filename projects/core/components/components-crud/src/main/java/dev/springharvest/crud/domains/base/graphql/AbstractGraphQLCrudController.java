@@ -7,6 +7,7 @@ import dev.springharvest.shared.constants.PageData;
 import dev.springharvest.shared.domains.base.models.dtos.BaseDTO;
 import dev.springharvest.shared.domains.base.models.entities.BaseEntity;
 import graphql.schema.DataFetchingEnvironment;
+import lombok.Setter;
 import org.springframework.beans.factory.annotation.Autowired;
 import dev.springharvest.expressions.builders.TypedQueryBuilder;
 import jakarta.persistence.criteria.JoinType;
@@ -49,6 +50,7 @@ public class AbstractGraphQLCrudController<E extends BaseEntity<K>, K extends Se
     /**
      * The TypedQueryBuilder to parse filter expressions.
      */
+    @Setter
     @Autowired
     private TypedQueryBuilder typedQueryBuilder;
 
@@ -82,7 +84,8 @@ public class AbstractGraphQLCrudController<E extends BaseEntity<K>, K extends Se
     @Override
     public Object search(Map<String, Object> filter, Map<String, Object> clause, List<String> fields, Aggregates aggregatesFilter, DataPaging paging) {
         List<String> formattedFields = fields != null ? getFormattedFields(fields) : null;
-        return typedQueryBuilder.parseFilterExpression(Operation.SEARCH, entityClass, keyClass, filter, clause, formattedFields, null, getFormattedAggregates(aggregatesFilter, formattedFields), paging);
+        Aggregates aggregates = getFormattedAggregates(aggregatesFilter, formattedFields);
+        return typedQueryBuilder.parseFilterExpression(Operation.SEARCH, entityClass, keyClass, filter, clause, formattedFields, null, aggregates, paging);
     }
 
     @Override
@@ -91,6 +94,9 @@ public class AbstractGraphQLCrudController<E extends BaseEntity<K>, K extends Se
     }
 
     private static Aggregates getFormattedAggregates(Aggregates aggregates, List<String> fields) {
+        if (aggregates == null) {
+            return null;
+        }
         List<String> count = aggregates.count() != null && !aggregates.count().isEmpty() ? getFormattedFields(aggregates.count()) : null;
         List<String> sum = aggregates.sum() != null && !aggregates.sum().isEmpty() ? getFormattedFields(aggregates.sum()) : null;
         List<String> avg = aggregates.avg() != null && !aggregates.avg().isEmpty() ? getFormattedFields(aggregates.avg()) : null;
@@ -169,6 +175,12 @@ public class AbstractGraphQLCrudController<E extends BaseEntity<K>, K extends Se
     }
 
     private List<String> extractFieldsFromEnvironment(DataFetchingEnvironment environment) {
+        if (environment == null || environment.getSelectionSet() == null || environment.getSelectionSet().getFields() == null) {
+            return null;
+        }
+        if ( environment.getSelectionSet().getFields().isEmpty() ) {
+            return new ArrayList<>();
+        }
         List<String> fields = new ArrayList<>();
         environment.getSelectionSet().getFields().forEach(x -> {
             fields.add(x.getFullyQualifiedName());

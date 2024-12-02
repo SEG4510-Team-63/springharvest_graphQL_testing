@@ -2,7 +2,7 @@ input SortOrder {
   # The field to sort the results by
   field: String!
   # The direction to sort the results by
-  direction: SortDirection!
+  sortDirection: SortDirection!
 }
 
 enum SortDirection {

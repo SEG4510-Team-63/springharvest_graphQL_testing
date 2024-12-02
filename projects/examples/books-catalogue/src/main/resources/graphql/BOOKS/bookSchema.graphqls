@@ -1,7 +1,7 @@
 extend type Query
 {
-    searchBooks(filter: BookFilter = {}, clause: ClauseFilter = {}, paging: PageRequest = {page: 1, size: 2, sortOrders: [{ field: "Book.title", direction: ASC }]}) : BookPageData
-    complexBooksSearch(filter: BookFilter = {}, clause: ClauseFilter = {}, fields : [BookField], aggregates : BookAggregatesFilter, paging: PageRequest = {page: 1, size: 2, sortOrders: [{ field: "Book.title", direction: ASC }]}) : JSON
+    searchBooks(filter: BookFilter = {}, clause: ClauseFilter = {}, paging: PageRequest = {page: 1, size: 2, sortOrders: [{ field: "Book.title", sortDirection: ASC }]}) : BookPageData
+    complexBooksSearch(filter: BookFilter = {}, clause: ClauseFilter = {}, fields : [BookField], aggregates : BookAggregatesFilter, paging: PageRequest = {page: 1, size: 2, sortOrders: [{ field: "Book.title", sortDirection: ASC }]}) : JSON
     countBooks(filter : BookFilter = {}, clause: ClauseFilter = {}, fields: BookField) : Long
 }
 

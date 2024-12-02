@@ -28,7 +28,7 @@ public class BookGraphQLController extends AbstractGraphQLCrudController<BookEnt
     }
 
     @QueryMapping
-    public Object complexBooksSearch(@Argument Map<String, Object> filter, @Argument Map<String, Object> clause, @Argument List<String> fields, @Argument DataPaging paging, @Argument Aggregates aggregates, DataFetchingEnvironment environment) {
+    public Object complexBooksSearch(@Argument Map<String, Object> filter, @Argument Map<String, Object> clause, @Argument List<String> fields, @Argument DataPaging paging, @Argument Aggregates aggregates) {
         return search(filter, clause, fields, aggregates, paging);
     }
 

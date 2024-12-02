@@ -1,5 +1,5 @@
 extend type Query {
-    searchAuthors(filter: AuthorFilter = {}, clause: ClauseFilter = {}, paging: PageRequest = { page: 1, size: 2, sortOrders: [{ field: "Author.pet.name", direction: ASC }]}) : AuthorPageData
+    searchAuthors(filter: AuthorFilter = {}, clause: ClauseFilter = {}, paging: PageRequest = { page: 1, size: 2, sortOrders: [{ field: "Author.pet.name", sortDirection: ASC }]}) : AuthorPageData
     countAuthors(filter : AuthorFilter = {}, clause: ClauseFilter = {}, fields: String) : Long
 }
 

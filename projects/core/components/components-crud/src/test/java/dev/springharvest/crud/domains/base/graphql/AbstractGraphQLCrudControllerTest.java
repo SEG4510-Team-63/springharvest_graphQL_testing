@@ -2,6 +2,8 @@ package dev.springharvest.crud.domains.base.graphql;
 
 import dev.springharvest.shared.constants.*;
 import graphql.schema.DataFetchingFieldSelectionSet;
+import jakarta.persistence.criteria.JoinType;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -17,6 +19,11 @@ import dev.springharvest.expressions.builders.TypedQueryBuilder;
 import dev.springharvest.shared.domains.base.models.entities.BaseEntity;
 import dev.springharvest.expressions.helpers.Operation;
 import graphql.schema.DataFetchingEnvironment;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.io.Serializable;
@@ -24,35 +31,56 @@ import java.util.*;
 
 public class AbstractGraphQLCrudControllerTest {
 
-    private class AuthorDTO{
+    private class Author extends BaseEntity<UUID>{
         public String name;
-        public UUID id;
-        public PetDTO pet;
+        public Pet pet;
     }
-    private class PetDTO{
+    private class Pet extends BaseEntity<UUID>{
         public String name;
-        public UUID id;
+    }
 
+    @Mock
+    private TypedQueryBuilder typedQueryBuilder;
+    private Class<Author> entityClass = Author.class;
+    private Class<UUID> keyClass = UUID.class;
+
+    @Autowired
+    private AbstractGraphQLCrudController<Author, UUID> abstractGraphQLCrudController;
+
+    @BeforeEach
+    void setUp() {
+        MockitoAnnotations.openMocks(this);
+        abstractGraphQLCrudController = new AbstractGraphQLCrudController<>(Author.class, UUID.class) {};
+        abstractGraphQLCrudController.setTypedQueryBuilder(typedQueryBuilder);
     }
-    private TypedQueryBuilder typedQueryBuilder = mock(TypedQueryBuilder.class);
-    private AbstractGraphQLCrudController<BaseEntity<Serializable>, Serializable> abstractGraphQLCrudController = mock(AbstractGraphQLCrudController.class);
-    private Class<BaseEntity> entityClass = BaseEntity.class;
-    private Class<Serializable> keyClass = Serializable.class;
 
     @Test
     void searchWithValidFilter() {
         DataFetchingEnvironment environment = mock(DataFetchingEnvironment.class);
-        when(environment.getSelectionSet()).thenReturn(mock(DataFetchingFieldSelectionSet.class));
+        DataFetchingFieldSelectionSet selectionSet = mock(DataFetchingFieldSelectionSet.class);
+        when(environment.getSelectionSet()).thenReturn(selectionSet);
+        when(selectionSet.getFields()).thenReturn(Collections.emptyList());
         Map<String, Object> filter = new HashMap<>();
         Map<String, Object> clause = new HashMap<>();
+        Map<String, JoinType> joins = new HashMap<>();
+        List<String> fields = new ArrayList<>();
         DataPaging paging = new DataPaging(1, 10, new ArrayList<>());
-        PageData<BaseEntity<Serializable>> expectedPageData = new PageData<>(new ArrayList<>(), 1, 10, 0L, 1, 10);
-        PageData<BaseEntity<Serializable>> another = new PageData<>(new ArrayList<>(), 1, 10, 1L, 1, 10);
+        PageData<Author> expectedPageData = new PageData<>(new ArrayList<>(), 1, 10, 0L, 1, 10);
+        //PageData<AuthorDTO> another = new PageData<>(new ArrayList<>(), 1, 10, 1L, 1, 10);
 
-        when(typedQueryBuilder.parseFilterExpression(eq(Operation.SEARCH), eq(entityClass), eq(keyClass), eq(filter), eq(clause), anyList(), anyMap(), any(), eq(paging)))
-                .thenReturn(expectedPageData);
+        when(typedQueryBuilder.parseFilterExpression(
+                eq(Operation.SEARCH),
+                eq(entityClass),
+                eq(keyClass),
+                eq(filter),
+                eq(clause),
+                eq(fields),
+                eq(joins),
+                eq(null),
+                eq(paging)
+        )).thenReturn(expectedPageData);
 
-        PageData<BaseEntity<Serializable>> result = abstractGraphQLCrudController.search(filter, clause, paging, environment);
+        PageData<Author> result = abstractGraphQLCrudController.search(filter, clause, paging, environment);
 
         assertEquals(expectedPageData, result);
     }
@@ -63,12 +91,16 @@ public class AbstractGraphQLCrudControllerTest {
         when(environment.getSelectionSet()).thenReturn(mock(DataFetchingFieldSelectionSet.class));
         Map<String, Object> filter = null;
         Map<String, Object> clause = new HashMap<>();
+        clause.put("distinct", "true");
+        // You are missing test cases
+        // You need to test with a joins Map, field, and aggregates object too
+        // Refer to BooksGraphQLControllerTest.java for joins Map examples
         DataPaging paging = new DataPaging(1, 10, new ArrayList<>());
 
         when(typedQueryBuilder.parseFilterExpression(eq(Operation.SEARCH), eq(entityClass), eq(keyClass), eq(filter), eq(clause), anyList(), anyMap(), any(), eq(paging)))
                 .thenReturn(null);
 
-        PageData<BaseEntity<Serializable>> result = abstractGraphQLCrudController.search(filter, clause, paging, environment);
+        PageData<Author> result = abstractGraphQLCrudController.search(filter, clause, paging, environment);
 
         assertNotNull(result);
     }
@@ -80,12 +112,12 @@ public class AbstractGraphQLCrudControllerTest {
         Map<String, Object> filter = new HashMap<>();
         Map<String, Object> clause = new HashMap<>();
         DataPaging paging = new DataPaging(1, 10, new ArrayList<>());
-        PageData<BaseEntity<Serializable>> expectedPageData = new PageData<>(new ArrayList<>(), 1, 10, 0L, 1, 10);
+        PageData<Author> expectedPageData = new PageData<>(new ArrayList<>(), 1, 10, 0L, 1, 10);
 
         when(typedQueryBuilder.parseFilterExpression(eq(Operation.SEARCH), eq(entityClass), eq(keyClass), eq(filter), eq(clause), anyList(), anyMap(), any(), eq(paging)))
                 .thenReturn(expectedPageData);
 
-        PageData<BaseEntity<Serializable>> result = abstractGraphQLCrudController.search(filter, clause, paging, environment);
+        PageData<Author> result = abstractGraphQLCrudController.search(filter, clause, paging, environment);
 
         assertNotNull(result);
         assertEquals(expectedPageData, result);
@@ -112,14 +144,17 @@ public class AbstractGraphQLCrudControllerTest {
     @Test
     void countWithValidFilter() {
         Map<String, Object> filter = new HashMap<>();
+        Map<String, Object> equals = new LinkedHashMap<>();
+        equals.put("containsic", "ss");
+        filter.put("name", equals);
         Map<String, Object> clause = new HashMap<>();
-        List<String> fields = Arrays.asList("field1", "field2");
-        long expectedCount = 0L;
+        List<String> fields = List.of("Author_name");
+        List<String> formattedFields = List.of("Author.name");
+        long expectedCount = 4L;
 
-        when(typedQueryBuilder.parseFilterExpression(eq(Operation.COUNT), eq(entityClass), eq(keyClass), eq(filter), eq(clause), eq(fields), anyMap(), any(), any()))
+        when(typedQueryBuilder.parseFilterExpression(eq(Operation.COUNT), eq(entityClass), eq(keyClass), eq(filter), eq(clause), eq(formattedFields), eq(null), eq(null), eq(null)))
                 .thenReturn(expectedCount);
 
-        ReflectionTestUtils.setField(abstractGraphQLCrudController, "typedQueryBuilder", typedQueryBuilder);
         long result = abstractGraphQLCrudController.count(filter, clause, fields);
 
         assertEquals(expectedCount, result);
@@ -129,10 +164,11 @@ public class AbstractGraphQLCrudControllerTest {
     void countWithEmptyFilter() {
         Map<String, Object> filter = new HashMap<>();
         Map<String, Object> clause = new HashMap<>();
-        List<String> fields = new ArrayList<>();
+        List<String> fields = List.of("Author_id");
+        List<String> formattedFields = List.of("Author.id");
         long expectedCount = 0L;
 
-        when(typedQueryBuilder.parseFilterExpression(eq(Operation.COUNT), eq(entityClass), eq(keyClass), eq(filter), eq(clause), eq(fields), anyMap(), any(), any()))
+        when(typedQueryBuilder.parseFilterExpression(eq(Operation.COUNT), eq(entityClass), eq(keyClass), eq(filter), eq(clause), eq(formattedFields), eq(null), eq(null), eq(null)))
                 .thenReturn(expectedCount);
 
         long result = abstractGraphQLCrudController.count(filter, clause, fields);

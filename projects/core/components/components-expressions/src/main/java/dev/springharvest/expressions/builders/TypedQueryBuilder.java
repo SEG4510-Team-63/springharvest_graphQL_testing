@@ -10,6 +10,7 @@ import jakarta.persistence.criteria.From;
 import jakarta.persistence.criteria.Join;
 import jakarta.persistence.criteria.JoinType;
 import jakarta.persistence.criteria.*;
+import lombok.Setter;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -57,6 +58,7 @@ public class TypedQueryBuilder {
      * The query is used to get the result list.
      */
     @Autowired
+    @Setter
     private EntityManagerFactory entityManagerFactory;
 
     /**
