@@ -37,9 +37,17 @@ public class AbstractGraphQLCrudControllerTest {
     private class Author extends BaseEntity<UUID>{
         public String name;
         public Pet pet;
+
+        public Author(String name, Pet pet) {
+            this.name = name;
+            this.pet = pet;
+        }
     }
     private class Pet extends BaseEntity<UUID>{
         public String name;
+        public Pet(String name) {
+            this.name = name;
+        }
     }
 
     @Mock
@@ -103,9 +111,6 @@ public class AbstractGraphQLCrudControllerTest {
         PageData<Author> result = abstractGraphQLCrudController.search(filter, clause, paging, environment);
 
         assertEquals(null, result);
-        // You are missing test cases
-        // You need to test with a joins Map, field, and aggregates object too
-        // Refer to BooksGraphQLControllerTest.java for joins Map examples
     }
 
     @Test
@@ -115,14 +120,20 @@ public class AbstractGraphQLCrudControllerTest {
         when(environment.getSelectionSet()).thenReturn(selectionSet);
         when(selectionSet.getFields()).thenReturn(Collections.emptyList());
         Map<String, Object> filter = new LinkedHashMap<>();
+        Map<String, Object> petFilter = new LinkedHashMap<>();
         Map<String, Object> equals = new LinkedHashMap<>();
-        equals.put("containsic", "java");
-        filter.put("title", equals);
+        equals.put("containsic", "jo");
+        petFilter.put("name", equals);
+        filter.put("pet", petFilter);
         Map<String, Object> clause = Map.of("distinct", "true");
         Map<String, JoinType> joins = new LinkedHashMap<>();
-        joins.put("author", JoinType.LEFT);
+        joins.put("pet", JoinType.RIGHT);
         DataPaging paging = new DataPaging(0, 10, new ArrayList<>());
-        PageData<Author> expectedPageData = new PageData<>(new ArrayList<>(), 1, 10, 0L, 1, 10);
+        Pet pet = new Pet("Jojo");
+        Author author = new Author("Joshua Bloch", pet);
+        Pet pet2 = new Pet("Rocky");
+        Author author2 = new Author("Joshua Bloch", pet2);
+        PageData<Author> expectedPageData = new PageData<>(List.of(author), 1, 10, 0L, 1, 10);
 
         when(typedQueryBuilder.parseFilterExpression(
                 eq(Operation.SEARCH),
@@ -162,43 +173,41 @@ public class AbstractGraphQLCrudControllerTest {
     @Test
     void searchWithAggregatesFilter() {
         Map<String, Object> filter = new LinkedHashMap<>();
+        Map<String, Object> petFilter = new LinkedHashMap<>();
         Map<String, Object> equals = new LinkedHashMap<>();
-        equals.put("containsic", "java");
-        filter.put("title", equals);
-        Map<String, Object> clause = new LinkedHashMap<>();
+        equals.put("containsic", "jo");
+        petFilter.put("name", equals);
+        filter.put("pet", petFilter);
+        Map<String, Object> clause = Map.of("distinct", "false");
         List<String> fields = new ArrayList<>();
-        fields.add("Book_title");
-        fields.add("Book_genre");
-        List<String> formattedFields = new ArrayList<>();
-        formattedFields.add("Book.title");
-        formattedFields.add("Book.genre");
-        DataPaging paging = new DataPaging(1, 10, Collections.singletonList(new Sort("Book.title", SortDirection.ASC)));
+        fields.add("Author.name");
+        fields.add("Author.pet.name");
+        DataPaging paging = new DataPaging(1, 10, Collections.singletonList(new Sort("Author.pet.name", SortDirection.DESC)));
         List<String> countFields = new ArrayList<>();
-        countFields.add("Book_genre");
+        countFields.add("Author_name");
         List<String> formattedCountFields = new ArrayList<>();
-        formattedCountFields.add("Book.genre");
+        formattedCountFields.add("Author.name");
         List<String> formattedGroupByFields = new ArrayList<>();
-        formattedGroupByFields.add("Book.title");
-        formattedGroupByFields.add("Book.genre");
+        formattedGroupByFields.add("Author.name");
+        formattedGroupByFields.add("Author.pet.name");
         Aggregates aggregates = new Aggregates(countFields, null, null, null, null, null);
         Aggregates formattedAggregates = new Aggregates(formattedCountFields, null, null, null, null, formattedGroupByFields);
 
         Object resultsList = getObjects();
 
-        when(typedQueryBuilder.parseFilterExpression(eq(Operation.SEARCH), eq(entityClass), eq(keyClass), eq(filter), eq(clause), eq(formattedFields), eq(null), eq(formattedAggregates), eq(paging)))
+        when(typedQueryBuilder.parseFilterExpression(eq(Operation.SEARCH), eq(entityClass), eq(keyClass), eq(filter), eq(clause), eq(fields), eq(null), eq(formattedAggregates), eq(paging)))
                 .thenReturn(resultsList);
 
         Object result = abstractGraphQLCrudController.search(filter, clause, fields, aggregates, paging);
-        System.out.println(result);
 
         assertEquals(resultsList, result);
     }
     @NotNull
     private static List<Object> getObjects() {
         Map<String, Object> bookDetails = new HashMap<>();
-        bookDetails.put("title", "Effective Java");
-        bookDetails.put("genre", "Science");
-        bookDetails.put("count_genre", 1);
+        bookDetails.put("name", "Joshua Bloch");
+        bookDetails.put("pet.name", "Jojo");
+        bookDetails.put("count_name", 1);
 
         // Second map with nested map
         Map<String, Object> pagingDetails = new HashMap<>();
@@ -207,7 +216,7 @@ public class AbstractGraphQLCrudControllerTest {
         _paging.put("currentPageCount", 1);
         _paging.put("totalPages", 1);
         _paging.put("page", 1);
-        _paging.put("totalCount", 5);
+        _paging.put("totalCount", 1);
 
         pagingDetails.put("paging", _paging);
 
@@ -251,5 +260,91 @@ public class AbstractGraphQLCrudControllerTest {
         long result = abstractGraphQLCrudController.count(filter, clause, fields);
 
         assertEquals(expectedCount, result);
+    }
+
+    @Test
+    void getFormattedFieldsHandlesDotDataSlash() {
+        List<String> fields = List.of("pageData.data/data.name", "pageData.data/data.pet/pet.name");
+        List<String> expected = List.of("data.name", "data.pet.name");
+
+        List<String> result = AbstractGraphQLCrudController.getFormattedFields(fields);
+
+        assertEquals(expected, result);
+    }
+
+    @Test
+    void getFormattedFieldsHandlesSlash() {
+        List<String> fields = List.of("data/data.name");
+        List<String> expected = List.of("data.name");
+
+        List<String> result = AbstractGraphQLCrudController.getFormattedFields(fields);
+
+        assertEquals(expected, result);
+    }
+
+    @Test
+    void getFormattedFieldsHandlesUnderscore() {
+        List<String> fields = List.of("author_name");
+        List<String> expected = List.of("author.name");
+
+        List<String> result = AbstractGraphQLCrudController.getFormattedFields(fields);
+
+        assertEquals(expected, result);
+    }
+
+    @Test
+    void getFormattedAggregatesReturnsNullWhenAggregatesIsNull() {
+        Aggregates result = AbstractGraphQLCrudController.getFormattedAggregates(null, List.of("field1"));
+        assertEquals(null, result);
+    }
+
+    @Test
+    void getFormattedAggregatesHandlesEmptyFields() {
+        Aggregates aggregates = new Aggregates(List.of("data_id"), List.of("data_age"), List.of("data_salary"), List.of("data_salary", "data_experience"), List.of("data_salary", "data_experience"), null);
+        Aggregates expected = new Aggregates(List.of("data.id"), List.of("data.age"), List.of("data.salary"), List.of("data.salary", "data.experience"), List.of("data.salary", "data.experience"), null);
+
+        Aggregates result = AbstractGraphQLCrudController.getFormattedAggregates(aggregates, List.of());
+
+        assertEquals(expected, result);
+    }
+
+    @Test
+    void getFormattedAggregatesHandlesNonEmptyFields() {
+        Aggregates aggregates = new Aggregates(List.of("data_id"), List.of("data_age"), List.of("data_salary"), List.of("data_salary", "data_experience"), List.of("data_salary", "data_experience"), List.of("data_salary"));
+        Aggregates expected = new Aggregates(List.of("data.id"), List.of("data.age"), List.of("data.salary"), List.of("data.salary", "data.experience"), List.of("data.salary", "data.experience"), List.of("data.salary", "data.name", "data.sex"));
+
+        Aggregates result = AbstractGraphQLCrudController.getFormattedAggregates(aggregates, List.of("data.name", "data.sex"));
+
+        assertEquals(expected, result);
+    }
+
+    @Test
+    void getFormattedAggregatesHandlesNullFields() {
+        Aggregates aggregates = new Aggregates(List.of("countField"), List.of("sumField"), List.of("avgField"), List.of("minField"), List.of("maxField"), List.of("groupByField"));
+        Aggregates expected = new Aggregates(List.of("countField"), List.of("sumField"), List.of("avgField"), List.of("minField"), List.of("maxField"), List.of("groupByField"));
+
+        Aggregates result = AbstractGraphQLCrudController.getFormattedAggregates(aggregates, null);
+
+        assertEquals(expected, result);
+    }
+
+    @Test
+    void getFormattedAggregatesHandlesEmptyAggregates() {
+        Aggregates aggregates = new Aggregates(List.of(), List.of(), List.of(), List.of(), List.of(), List.of());
+        Aggregates expected = new Aggregates(null, null, null, null, null, null);
+
+        Aggregates result = AbstractGraphQLCrudController.getFormattedAggregates(aggregates, List.of("field1"));
+
+        assertEquals(expected, result);
+    }
+
+    @Test
+    void getFormattedAggregatesHandlesNullAggregates() {
+        Aggregates aggregates = null;
+        Aggregates expected = null;
+
+        Aggregates result = AbstractGraphQLCrudController.getFormattedAggregates(aggregates, List.of("field1"));
+
+        assertEquals(expected, result);
     }
 }

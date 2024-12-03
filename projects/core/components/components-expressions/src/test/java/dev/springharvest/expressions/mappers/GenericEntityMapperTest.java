@@ -117,8 +117,8 @@ class GenericEntityMapperTest {
         assertTrue(result.isEmpty());
     }
     public static class Author extends BaseEntity<UUID> {
-        public String name;
-        public Pet pet;
+        private String name;
+        private Pet pet;
 
         public String getName() {
             return name;
@@ -129,7 +129,7 @@ class GenericEntityMapperTest {
     }
 
     public static class Pet extends BaseEntity<UUID>{
-        public String name;
+        private String name;
         public String getName() {
             return name;
         }

@@ -93,7 +93,7 @@ public class AbstractGraphQLCrudController<E extends BaseEntity<K>, K extends Se
         return (long) typedQueryBuilder.parseFilterExpression(Operation.COUNT, entityClass, keyClass, filter, clause, getFormattedFields(fields), null, null, null);
     }
 
-    private static Aggregates getFormattedAggregates(Aggregates aggregates, List<String> fields) {
+    static Aggregates getFormattedAggregates(Aggregates aggregates, List<String> fields) {
         if (aggregates == null) {
             return null;
         }
@@ -126,7 +126,7 @@ public class AbstractGraphQLCrudController<E extends BaseEntity<K>, K extends Se
         return new Aggregates(count, sum, avg, min, max, groupBy);
     }
 
-    private static List<String> getFormattedFields(List<String> fields) {
+    static List<String> getFormattedFields(List<String> fields) {
         List<String> formattedFields = new ArrayList<>();
 
         fields.forEach(x -> {

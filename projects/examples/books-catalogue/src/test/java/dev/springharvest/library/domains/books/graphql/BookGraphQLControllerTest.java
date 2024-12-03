@@ -155,7 +155,7 @@ class BookGraphQLControllerTest {
         _paging.put("currentPageCount", 1);
         _paging.put("totalPages", 1);
         _paging.put("page", 1);
-        _paging.put("totalCount", 5);
+        _paging.put("totalCount", 1);
 
         pagingDetails.put("paging", _paging);
 
