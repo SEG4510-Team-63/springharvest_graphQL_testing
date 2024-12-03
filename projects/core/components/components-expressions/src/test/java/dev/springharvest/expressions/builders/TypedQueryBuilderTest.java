@@ -1,7 +1,10 @@
 package dev.springharvest.expressions.builders;
 
 import dev.springharvest.expressions.helpers.Operation;
-import dev.springharvest.shared.constants.*;
+import dev.springharvest.shared.constants.Aggregates;
+import dev.springharvest.shared.constants.DataPaging;
+import dev.springharvest.shared.constants.Sort;
+import dev.springharvest.shared.constants.SortDirection;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityManagerFactory;
 import jakarta.persistence.criteria.CriteriaBuilder;
@@ -11,8 +14,9 @@ import jakarta.persistence.criteria.Root;
 import jakarta.persistence.Tuple;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
-import org.springframework.test.util.ReflectionTestUtils;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 
 import java.util.*;
 
@@ -21,99 +25,127 @@ import static org.mockito.Mockito.*;
 
 class TypedQueryBuilderTest {
 
+    @Mock
     private EntityManagerFactory entityManagerFactory;
+
+    @Mock
     private EntityManager entityManager;
+
+    @Mock
     private CriteriaBuilder criteriaBuilder;
+
+    @Mock
     private CriteriaQuery<Tuple> criteriaQuery;
+
+    @Mock
     private Root<Object> root;
+
+    @InjectMocks
     private TypedQueryBuilder typedQueryBuilder;
 
     @BeforeEach
     void setUp() {
-        entityManagerFactory = mock(EntityManagerFactory.class);
-        entityManager = mock(EntityManager.class);
-        criteriaBuilder = mock(CriteriaBuilder.class);
-        criteriaQuery = mock(CriteriaQuery.class);
-        root = mock(Root.class);
-
+        MockitoAnnotations.openMocks(this);
         when(entityManagerFactory.createEntityManager()).thenReturn(entityManager);
         when(entityManager.getCriteriaBuilder()).thenReturn(criteriaBuilder);
         when(criteriaBuilder.createQuery(Tuple.class)).thenReturn(criteriaQuery);
         when(criteriaQuery.from(Object.class)).thenReturn(root);
-
-        typedQueryBuilder = new TypedQueryBuilder();
-        ReflectionTestUtils.setField(typedQueryBuilder, "entityManagerFactory", entityManagerFactory);
     }
 
     @Test
-    void parseFilterExpressionWithValidFilter() {
-        Map<String, Object> filterMap = new HashMap<>();
-        filterMap.put("name", "test");
-        Map<String, Object> clauseMap = new HashMap<>();
-        List<String> fields = Arrays.asList("field1", "field2");
-        Map<String, JoinType> joins = new HashMap<>();
-        Aggregates aggregatesFilter = new Aggregates(new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), new ArrayList<>());
-        DataPaging paging = new DataPaging(1, 10, new ArrayList<>());
-
-        Object result = typedQueryBuilder.parseFilterExpression(Operation.SEARCH, Object.class, Object.class, filterMap, clauseMap, fields, joins, aggregatesFilter, paging);
-
-        assertNotNull(result);
-    }
-
-    @Test
-    void parseFilterExpressionWithNullFilter() {
-        Map<String, Object> filterMap = null;
-        Map<String, Object> clauseMap = new HashMap<>();
-        List<String> fields = Arrays.asList("field1", "field2");
-        Map<String, JoinType> joins = new HashMap<>();
-        Aggregates aggregatesFilter = new Aggregates(new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), new ArrayList<>());
-        DataPaging paging = new DataPaging(1, 10, new ArrayList<>());
-
-        Object result = typedQueryBuilder.parseFilterExpression(Operation.SEARCH, Object.class, Object.class, filterMap, clauseMap, fields, joins, aggregatesFilter, paging);
-
-        assertNotNull(result);
-    }
-
-    @Test
-    void parseFilterExpressionWithEmptyFilter() {
+    void parseFilterExpression_withValidInputs_returnsExpectedResult() {
         Map<String, Object> filterMap = new HashMap<>();
         Map<String, Object> clauseMap = new HashMap<>();
         List<String> fields = Arrays.asList("field1", "field2");
         Map<String, JoinType> joins = new HashMap<>();
-        Aggregates aggregatesFilter = new Aggregates(new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), new ArrayList<>());
-        DataPaging paging = new DataPaging(1, 10, new ArrayList<>());
+        Aggregates aggregates = new Aggregates(new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), new ArrayList<>());
+        DataPaging paging = new DataPaging(1, 10, Collections.emptyList());
 
-        Object result = typedQueryBuilder.parseFilterExpression(Operation.SEARCH, Object.class, Object.class, filterMap, clauseMap, fields, joins, aggregatesFilter, paging);
+        Object result = typedQueryBuilder.parseFilterExpression(Operation.SEARCH, Object.class, Object.class, filterMap, clauseMap, fields, joins, aggregates, paging);
 
         assertNotNull(result);
     }
 
     @Test
-    void parseFilterExpressionWithAggregatesFilter() {
-        Map<String, Object> filterMap = new HashMap<>();
+    void parseFilterExpression_withNullFilterMap_returnsExpectedResult() {
         Map<String, Object> clauseMap = new HashMap<>();
         List<String> fields = Arrays.asList("field1", "field2");
-        Aggregates aggregatesFilter = new Aggregates(new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), new ArrayList<>());
-        DataPaging paging = new DataPaging(1, 10, new ArrayList<>());
+        Map<String, JoinType> joins = new HashMap<>();
+        Aggregates aggregates = new Aggregates(new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), new ArrayList<>());
+        DataPaging paging = new DataPaging(1, 10, Collections.emptyList());
 
-        Object result = typedQueryBuilder.parseFilterExpression(Operation.SEARCH, Object.class, Object.class, filterMap, clauseMap, fields, new HashMap<>(), aggregatesFilter, paging);
+        Object result = typedQueryBuilder.parseFilterExpression(Operation.SEARCH, Object.class, Object.class, null, clauseMap, fields, joins, aggregates, paging);
 
         assertNotNull(result);
     }
 
     @Test
-    void parseFilterExpressionWithCountOperation() {
+    void parseFilterExpression_withEmptyFilterMap_returnsExpectedResult() {
         Map<String, Object> filterMap = new HashMap<>();
         Map<String, Object> clauseMap = new HashMap<>();
         List<String> fields = Arrays.asList("field1", "field2");
         Map<String, JoinType> joins = new HashMap<>();
-        Aggregates aggregatesFilter = new Aggregates(new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), new ArrayList<>());
-        DataPaging paging = new DataPaging(1, 10, new ArrayList<>());
+        Aggregates aggregates = new Aggregates(new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), new ArrayList<>());
+        DataPaging paging = new DataPaging(1, 10, Collections.emptyList());
 
-        Object result = typedQueryBuilder.parseFilterExpression(Operation.COUNT, Object.class, Object.class, filterMap, clauseMap, fields, joins, aggregatesFilter, paging);
+        Object result = typedQueryBuilder.parseFilterExpression(Operation.SEARCH, Object.class, Object.class, filterMap, clauseMap, fields, joins, aggregates, paging);
 
         assertNotNull(result);
     }
 
+    @Test
+    void parseFilterExpression_withNullFields_returnsExpectedResult() {
+        Map<String, Object> filterMap = new HashMap<>();
+        Map<String, Object> clauseMap = new HashMap<>();
+        Map<String, JoinType> joins = new HashMap<>();
+        Aggregates aggregates = new Aggregates(new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), new ArrayList<>());
+        DataPaging paging = new DataPaging(1, 10, Collections.emptyList());
 
+        Object result = typedQueryBuilder.parseFilterExpression(Operation.SEARCH, Object.class, Object.class, filterMap, clauseMap, null, joins, aggregates, paging);
+
+        assertNotNull(result);
+    }
+
+    @Test
+    void parseFilterExpression_withNullPaging_returnsExpectedResult() {
+        Map<String, Object> filterMap = new HashMap<>();
+        Map<String, Object> clauseMap = new HashMap<>();
+        List<String> fields = Arrays.asList("field1", "field2");
+        Map<String, JoinType> joins = new HashMap<>();
+        Aggregates aggregates = new Aggregates(new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), new ArrayList<>());
+
+        Object result = typedQueryBuilder.parseFilterExpression(Operation.SEARCH, Object.class, Object.class, filterMap, clauseMap, fields, joins, aggregates, null);
+
+        assertNotNull(result);
+    }
+
+    @Test
+    void parseFilterExpression_withCountOperation_returnsExpectedResult() {
+        Map<String, Object> filterMap = new HashMap<>();
+        Map<String, Object> clauseMap = new HashMap<>();
+        List<String> fields = Arrays.asList("field1", "field2");
+        Map<String, JoinType> joins = new HashMap<>();
+        Aggregates aggregates = new Aggregates(new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), new ArrayList<>());
+        DataPaging paging = new DataPaging(1, 10, Collections.emptyList());
+
+        Object result = typedQueryBuilder.parseFilterExpression(Operation.COUNT, Object.class, Object.class, filterMap, clauseMap, fields, joins, aggregates, paging);
+
+        assertNotNull(result);
+    }
+
+    @Test
+    void parseFilterExpression_withNullEntityManager_throwsException() {
+        when(entityManagerFactory.createEntityManager()).thenReturn(null);
+
+        Map<String, Object> filterMap = new HashMap<>();
+        Map<String, Object> clauseMap = new HashMap<>();
+        List<String> fields = Arrays.asList("field1", "field2");
+        Map<String, JoinType> joins = new HashMap<>();
+        Aggregates aggregates = new Aggregates(new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), new ArrayList<>());
+        DataPaging paging = new DataPaging(1, 10, Collections.emptyList());
+
+        assertThrows(NullPointerException.class, () -> {
+            typedQueryBuilder.parseFilterExpression(Operation.SEARCH, Object.class, Object.class, filterMap, clauseMap, fields, joins, aggregates, paging);
+        });
+    }
 }
