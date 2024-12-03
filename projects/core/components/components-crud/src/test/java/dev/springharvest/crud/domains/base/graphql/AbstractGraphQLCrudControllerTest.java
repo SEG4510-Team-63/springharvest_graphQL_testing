@@ -2,7 +2,9 @@ package dev.springharvest.crud.domains.base.graphql;
 
 import dev.springharvest.shared.constants.*;
 import graphql.schema.DataFetchingFieldSelectionSet;
+import jakarta.persistence.EntityManagerFactory;
 import jakarta.persistence.criteria.JoinType;
+import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -12,6 +14,7 @@ import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.times;
 import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -44,6 +47,7 @@ public class AbstractGraphQLCrudControllerTest {
     private Class<Author> entityClass = Author.class;
     private Class<UUID> keyClass = UUID.class;
 
+
     @Autowired
     private AbstractGraphQLCrudController<Author, UUID> abstractGraphQLCrudController;
 
@@ -66,7 +70,6 @@ public class AbstractGraphQLCrudControllerTest {
         List<String> fields = new ArrayList<>();
         DataPaging paging = new DataPaging(1, 10, new ArrayList<>());
         PageData<Author> expectedPageData = new PageData<>(new ArrayList<>(), 1, 10, 0L, 1, 10);
-        //PageData<AuthorDTO> another = new PageData<>(new ArrayList<>(), 1, 10, 1L, 1, 10);
 
         when(typedQueryBuilder.parseFilterExpression(
                 eq(Operation.SEARCH),
@@ -92,9 +95,6 @@ public class AbstractGraphQLCrudControllerTest {
         Map<String, Object> filter = null;
         Map<String, Object> clause = new HashMap<>();
         clause.put("distinct", "true");
-        // You are missing test cases
-        // You need to test with a joins Map, field, and aggregates object too
-        // Refer to BooksGraphQLControllerTest.java for joins Map examples
         DataPaging paging = new DataPaging(1, 10, new ArrayList<>());
 
         when(typedQueryBuilder.parseFilterExpression(eq(Operation.SEARCH), eq(entityClass), eq(keyClass), eq(filter), eq(clause), anyList(), anyMap(), any(), eq(paging)))
@@ -102,7 +102,43 @@ public class AbstractGraphQLCrudControllerTest {
 
         PageData<Author> result = abstractGraphQLCrudController.search(filter, clause, paging, environment);
 
-        assertNotNull(result);
+        assertEquals(null, result);
+        // You are missing test cases
+        // You need to test with a joins Map, field, and aggregates object too
+        // Refer to BooksGraphQLControllerTest.java for joins Map examples
+    }
+
+    @Test
+    void searchWithValidJoins() {
+        DataFetchingEnvironment environment = mock(DataFetchingEnvironment.class);
+        DataFetchingFieldSelectionSet selectionSet = mock(DataFetchingFieldSelectionSet.class);
+        when(environment.getSelectionSet()).thenReturn(selectionSet);
+        when(selectionSet.getFields()).thenReturn(Collections.emptyList());
+        Map<String, Object> filter = new LinkedHashMap<>();
+        Map<String, Object> equals = new LinkedHashMap<>();
+        equals.put("containsic", "java");
+        filter.put("title", equals);
+        Map<String, Object> clause = Map.of("distinct", "true");
+        Map<String, JoinType> joins = new LinkedHashMap<>();
+        joins.put("author", JoinType.LEFT);
+        DataPaging paging = new DataPaging(0, 10, new ArrayList<>());
+        PageData<Author> expectedPageData = new PageData<>(new ArrayList<>(), 1, 10, 0L, 1, 10);
+
+        when(typedQueryBuilder.parseFilterExpression(
+                eq(Operation.SEARCH),
+                eq(entityClass),
+                eq(keyClass),
+                eq(filter),
+                eq(clause),
+                anyList(),
+                anyMap(),
+                eq(null),
+                eq(paging)
+        )).thenReturn(expectedPageData);
+
+        PageData<Author> result = abstractGraphQLCrudController.search(filter, clause, paging, environment);
+
+        assertEquals(expectedPageData, result);
     }
 
     @Test
@@ -125,20 +161,61 @@ public class AbstractGraphQLCrudControllerTest {
 
     @Test
     void searchWithAggregatesFilter() {
-        Map<String, Object> filter = new HashMap<>();
-        Map<String, Object> clause = new HashMap<>();
-        List<String> fields = Arrays.asList("field1", "field2");
-        Aggregates aggregatesFilter = new Aggregates(new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), new ArrayList<>());
-        DataPaging paging = new DataPaging(1, 10, new ArrayList<>());
-        Object expectedResult = new Object();
+        Map<String, Object> filter = new LinkedHashMap<>();
+        Map<String, Object> equals = new LinkedHashMap<>();
+        equals.put("containsic", "java");
+        filter.put("title", equals);
+        Map<String, Object> clause = new LinkedHashMap<>();
+        List<String> fields = new ArrayList<>();
+        fields.add("Book_title");
+        fields.add("Book_genre");
+        List<String> formattedFields = new ArrayList<>();
+        formattedFields.add("Book.title");
+        formattedFields.add("Book.genre");
+        DataPaging paging = new DataPaging(1, 10, Collections.singletonList(new Sort("Book.title", SortDirection.ASC)));
+        List<String> countFields = new ArrayList<>();
+        countFields.add("Book_genre");
+        List<String> formattedCountFields = new ArrayList<>();
+        formattedCountFields.add("Book.genre");
+        List<String> formattedGroupByFields = new ArrayList<>();
+        formattedGroupByFields.add("Book.title");
+        formattedGroupByFields.add("Book.genre");
+        Aggregates aggregates = new Aggregates(countFields, null, null, null, null, null);
+        Aggregates formattedAggregates = new Aggregates(formattedCountFields, null, null, null, null, formattedGroupByFields);
 
-        when(typedQueryBuilder.parseFilterExpression(eq(Operation.SEARCH), eq(entityClass), eq(keyClass), eq(filter), eq(clause), eq(fields), anyMap(), any(), eq(paging)))
-                .thenReturn(expectedResult);
+        Object resultsList = getObjects();
 
-        Object result = abstractGraphQLCrudController.search(filter, clause, fields, aggregatesFilter, paging);
+        when(typedQueryBuilder.parseFilterExpression(eq(Operation.SEARCH), eq(entityClass), eq(keyClass), eq(filter), eq(clause), eq(formattedFields), eq(null), eq(formattedAggregates), eq(paging)))
+                .thenReturn(resultsList);
 
-        assertNotNull(result);
-        assertEquals(expectedResult, result);
+        Object result = abstractGraphQLCrudController.search(filter, clause, fields, aggregates, paging);
+        System.out.println(result);
+
+        assertEquals(resultsList, result);
+    }
+    @NotNull
+    private static List<Object> getObjects() {
+        Map<String, Object> bookDetails = new HashMap<>();
+        bookDetails.put("title", "Effective Java");
+        bookDetails.put("genre", "Science");
+        bookDetails.put("count_genre", 1);
+
+        // Second map with nested map
+        Map<String, Object> pagingDetails = new HashMap<>();
+        Map<String, Object> _paging = new HashMap<>();
+        _paging.put("size", 10);
+        _paging.put("currentPageCount", 1);
+        _paging.put("totalPages", 1);
+        _paging.put("page", 1);
+        _paging.put("totalCount", 5);
+
+        pagingDetails.put("paging", _paging);
+
+        // Add maps to the list
+        List<Object> resultsList = new ArrayList<>();
+        resultsList.add(bookDetails);
+        resultsList.add(pagingDetails);
+        return resultsList;
     }
 
     @Test

@@ -80,6 +80,7 @@ class BookGraphQLControllerTest {
                 .thenReturn(expectedPageData);
 
         PageData<BookEntity> result = bookGraphQLController.searchBooks(filter, clause, paging, environment);
+        System.out.println(result);
 
         assertEquals(expectedPageData, result);
     }
