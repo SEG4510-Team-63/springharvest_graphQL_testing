@@ -7,8 +7,8 @@ import jakarta.persistence.criteria.JoinType;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.verify;
@@ -293,6 +293,16 @@ public class AbstractGraphQLCrudControllerTest {
     }
 
     @Test
+    void getFormattedFieldsPagingElements() {
+        List<String> fields = List.of("data.currentPageCount", "data.totalPages", "data.currentPage", "data.total");
+        List<String> expected = List.of("currentPageCount", "totalPages", "currentPage", "total");
+
+        List<String> result = AbstractGraphQLCrudController.getFormattedFields(fields);
+
+        assertEquals(expected, result);
+    }
+
+    @Test
     void getFormattedAggregatesReturnsNullWhenAggregatesIsNull() {
         Aggregates result = AbstractGraphQLCrudController.getFormattedAggregates(null, List.of("field1"));
         assertEquals(null, result);
@@ -346,5 +356,50 @@ public class AbstractGraphQLCrudControllerTest {
         Aggregates result = AbstractGraphQLCrudController.getFormattedAggregates(aggregates, List.of("field1"));
 
         assertEquals(expected, result);
+    }
+
+
+
+
+
+
+    @Test
+    void processJoinsWithValidJoins() {
+        abstractGraphQLCrudController.joins.put("author_pet", JoinType.LEFT);
+        abstractGraphQLCrudController.joins.put("author_books", JoinType.INNER);
+
+        abstractGraphQLCrudController.processJoins();
+
+        assertEquals(JoinType.LEFT, abstractGraphQLCrudController.joins.get("author.pet"));
+        assertEquals(JoinType.INNER, abstractGraphQLCrudController.joins.get("author.books"));
+    }
+
+    @Test
+    void processJoinsWithEmptyJoins() {
+        abstractGraphQLCrudController.joins.clear();
+
+        abstractGraphQLCrudController.processJoins();
+
+        assertTrue(abstractGraphQLCrudController.joins.isEmpty());
+    }
+
+    @Test
+    void processJoinsWithNullJoins() {
+        abstractGraphQLCrudController.joins = null;
+
+        abstractGraphQLCrudController.processJoins();
+
+        assertNull(abstractGraphQLCrudController.joins);
+    }
+
+    @Test
+    void processJoinsWithMixedJoinTypes() {
+        abstractGraphQLCrudController.joins.put("author_pet", JoinType.LEFT);
+        abstractGraphQLCrudController.joins.put("author_books", JoinType.RIGHT);
+
+        abstractGraphQLCrudController.processJoins();
+
+        assertEquals(JoinType.LEFT, abstractGraphQLCrudController.joins.get("author.pet"));
+        assertEquals(JoinType.RIGHT, abstractGraphQLCrudController.joins.get("author.books"));
     }
 }

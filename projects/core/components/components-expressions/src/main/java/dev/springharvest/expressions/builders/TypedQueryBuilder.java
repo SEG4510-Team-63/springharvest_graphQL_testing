@@ -66,8 +66,12 @@ public class TypedQueryBuilder {
      */
     private static Map<String, Join<?, ?>> joinsMap;
 
+    public static List<String> pagingElementsToInclude = new ArrayList<>();
+
     /**
      * Parses a filter expression and creates a typed query for querying entities.
+     * Examples of parameter values can be fount in the tests classes (TypedQueryBuilderTest, AbstractGraphQlControllerTest, BookGraphQlControllerTest, etc)
+     *
      *
      * @param operation The operation to be performed (e.g., SEARCH, COUNT).
      * @param rootClass The class of the root entity.
@@ -186,7 +190,7 @@ public class TypedQueryBuilder {
     private <T, K> Object applyOperations(CriteriaBuilder criteriaBuilder, CriteriaQuery<Tuple> criteriaQuery, EntityManager entityManager, Map<String, Object> operationMap, Root<T> root, List<String> fields, Map<String, JoinType> joins, Operation operation, Map<String, Object> filterMap, Class<T> rootClass, Class<K> keyClass, String rootOperator, Aggregates aggregates, DataPaging paging)
     {
         boolean distinct = operationMap != null && Boolean.TRUE.equals(operationMap.get("distinct"));
-        long total;
+        long total = -1L;
 
         switch (operation) {
             case SEARCH:
@@ -195,20 +199,27 @@ public class TypedQueryBuilder {
                     criteriaQuery.distinct(true);
                 }
                 TypedQuery<Tuple> query = entityManager.createQuery(criteriaQuery);
-                total = handleCountOperation(criteriaBuilder, criteriaQuery, entityManager, filterMap, rootClass, keyClass, fields, joins, rootOperator, distinct, root, true, aggregates);
-                query.setFirstResult((paging.page() - 1) * paging.size());
-                query.setMaxResults(paging.size());
-                int totalPages = (int) Math.ceil((double) total / paging.size());
+                int totalPages = -1;
+                if (pagingElementsToInclude.contains("total") || pagingElementsToInclude.contains("totalPages"))
+                    total = handleCountOperation(criteriaBuilder, criteriaQuery, entityManager, filterMap, rootClass, keyClass, fields, joins, rootOperator, distinct, root, true, aggregates);
+                if (paging != null) {
+                    query.setFirstResult((paging.page() - 1) * paging.size());
+                    query.setMaxResults(paging.size());
+                    if (pagingElementsToInclude.contains("totalPages"))
+                        totalPages = (int) Math.ceil((double) total / paging.size());
+                }
                 //Need the mapper here
                 List<Tuple> resultsList = query.getResultList();
-                int currentPageCount = resultsList.size();
+                int currentPageCount = -1;
+                if (pagingElementsToInclude.contains("currentPageCount"))
+                    currentPageCount = resultsList.size();
                 GenericEntityMapper<T> mapper = new GenericEntityMapper<>();
                 if (aggregates == null) // If no aggregates are specified, return a list of entities
                 {
                     return new PageData<>(
                             mapper.mapTuplesToEntity(resultsList, rootClass),
-                            paging.page(),
-                            paging.size(),
+                            paging != null && pagingElementsToInclude.contains("currentPage") ? paging.page() : -1,
+                            paging != null && pagingElementsToInclude.contains("pageSize") ? paging.size() : -1,
                             total,
                             totalPages,
                             currentPageCount);
@@ -255,7 +266,7 @@ public class TypedQueryBuilder {
         CriteriaQuery<Long> countQuery = criteriaBuilder.createQuery(Long.class);
         Root<?> countRoot = countQuery.from(root.getJavaType());
 
-        if (isSubQuery)
+        if (isSubQuery && aggregates == null)
         {
             List<Selection<?>> selections = new ArrayList<>();
             Subquery<Tuple> subquery = countQuery.subquery(Tuple.class);
@@ -473,6 +484,8 @@ public class TypedQueryBuilder {
      * @param paging Paging information for the query, including sort orders.
      */
     private  static void applySorting(CriteriaBuilder builder, CriteriaQuery<?> query, Root<?> root, DataPaging paging) {
+        if (paging == null)
+            return;
         if (paging.sortOrders() != null && !paging.sortOrders().isEmpty()) {
             List<Order> orders = new ArrayList<>();
             for (Sort sortOrder : paging.sortOrders()) {
@@ -845,6 +858,15 @@ public class TypedQueryBuilder {
         return combinedPredicate;
     }
 
+    /**
+     * Retrieves the real type parameter of a class, given a key class.
+     * This method traverses the class hierarchy to find the parameterized type argument.
+     *
+     * @param clazz The class whose type parameter is to be resolved.
+     * @param keyClass The key class used for resolving the type parameter.
+     * @return The resolved type parameter class.
+     * @throws IllegalArgumentException If the type parameter could not be resolved.
+     */
     public static Class<?> getRealTypeParameter(Class<?> clazz, Class<?> keyClass) {
         while (clazz != null) {
             // Check if the superclass is parameterized
@@ -876,7 +898,15 @@ public class TypedQueryBuilder {
         throw new IllegalArgumentException("Could not resolve the type parameter.");
     }
 
-    private static Class<?> resolveTypeArgument(Type typeArgument, Class<?> keyClass) {
+
+    /**
+     * Resolves the type argument of a parameterized type.
+     *
+     * @param typeArgument The type argument to be resolved.
+     * @param keyClass The key class used for resolving the type argument.
+     * @return The resolved type argument class.
+     */
+    static Class<?> resolveTypeArgument(Type typeArgument, Class<?> keyClass) {
         if (typeArgument instanceof Class<?>) {
             return (Class<?>) typeArgument;
         } else if (typeArgument instanceof ParameterizedType) {
@@ -930,7 +960,7 @@ public class TypedQueryBuilder {
      * @param fieldName The name of the field to check.
      * @return true if the field is overridden, false otherwise.
      */
-    private static boolean isOverriddenField(Class<?> clazz, String fieldName) {
+    static boolean isOverriddenField(Class<?> clazz, String fieldName) {
         // Check for @AttributeOverride
         while (clazz != null) {
             for (AttributeOverride override : clazz.getDeclaredAnnotationsByType(AttributeOverride.class)) {
@@ -973,7 +1003,7 @@ public class TypedQueryBuilder {
      * @return The type of the specified field.
      * @throws NoSuchFieldException If the field is not found in the class.
      */
-    private static Class<?> getActualFieldType(Class<?> clazz, String fieldName) throws NoSuchFieldException {
+    static Class<?> getActualFieldType(Class<?> clazz, String fieldName) throws NoSuchFieldException {
         // Traverse the class hierarchy to find the field
         while (clazz != null) {
             for (Field field : clazz.getDeclaredFields()) {
@@ -998,7 +1028,7 @@ public class TypedQueryBuilder {
      * @param fieldName The name of the field whose actual name is to be retrieved.
      * @return The actual field name, or the original field name if no override is found.
      */
-    private static String getActualFieldName(Class<?> clazz, String fieldName) {
+    static String getActualFieldName(Class<?> clazz, String fieldName) {
         // Check for @AttributeOverride
         while (clazz != null) {
             for (AttributeOverride override : clazz.getDeclaredAnnotationsByType(AttributeOverride.class)) {
@@ -1058,25 +1088,32 @@ public class TypedQueryBuilder {
         List<String> cleanedFields = new ArrayList<>(fields);
 
         for (int i = 0; i < cleanedFields.size(); i++) {
-            String[] temp = cleanedFields.get(i).split("\\.");
-            Class<?> currentClass = rootClass;  // Reset rootClass for each field entry
+            if (!Objects.equals(cleanedFields.get(i), "currentPage") && !Objects.equals(cleanedFields.get(i), "pageSize") && !Objects.equals(cleanedFields.get(i), "totalPages") && !Objects.equals(cleanedFields.get(i), "currentPageCount") && !Objects.equals(cleanedFields.get(i), "total")) {
+                String[] temp = cleanedFields.get(i).split("\\.");
+                Class<?> currentClass = rootClass;  // Reset rootClass for each field entry
 
-            // Start from the second element (index 1)
-            for (int j = 1; j < temp.length; j++) {
-                String fieldName = temp[j];
+                // Start from the second element (index 1)
+                for (int j = 1; j < temp.length; j++) {
+                    String fieldName = temp[j];
 
-                if (isComplexField(currentClass, keyClass, fieldName)) {
-                    // Mark as complex if we encounter a complex field
-                    // If we are at the last element and it's complex, remove the entry
-                    if (j + 1 == temp.length) {
-                        cleanedFields.remove(i);
-                        i--;  // Adjust the index after removal
-                        break;
-                    } else {
-                        // Update the current class to the complex field's type for further checks
-                        currentClass = getFieldType(currentClass, fieldName);
+                    if (isComplexField(currentClass, keyClass, fieldName)) {
+                        // Mark as complex if we encounter a complex field
+                        // If we are at the last element and it's complex, remove the entry
+                        if (j + 1 == temp.length) {
+                            cleanedFields.remove(i);
+                            i--;  // Adjust the index after removal
+                            break;
+                        } else {
+                            // Update the current class to the complex field's type for further checks
+                            currentClass = getFieldType(currentClass, fieldName);
+                        }
                     }
                 }
+            }
+            else {
+                pagingElementsToInclude.add(cleanedFields.get(i));
+                cleanedFields.remove(i);
+                i--;
             }
         }
 
