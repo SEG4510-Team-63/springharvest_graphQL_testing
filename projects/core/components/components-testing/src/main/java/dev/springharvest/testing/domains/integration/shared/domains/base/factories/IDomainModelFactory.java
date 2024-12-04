@@ -54,10 +54,9 @@ public interface IDomainModelFactory<D extends DomainModel> {
 
       softly.assertThat(actualTraceDates).isNotNull();
       softly.assertThat(expectedTraceDates).isNotNull();
-      long createdTimeDifferenceInMilliSeconds = ChronoUnit.MILLIS.between(
-              actualTraceDates.getDateCreated().atStartOfDay(ZoneId.systemDefault()).toInstant(),
-              expectedTraceDates.getDateUpdated().atStartOfDay(ZoneId.systemDefault()).toInstant()
-      );
+      long createdTimeDifferenceInMilliSeconds =
+              actualTraceDates.getDateCreated().atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli() -
+                      expectedTraceDates.getDateUpdated().atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli();
 
       long createdTimeDifferenceInSeconds = createdTimeDifferenceInMilliSeconds / 1000;
       long createdTimeDifferenceInMinutes = createdTimeDifferenceInSeconds / 60;
